@@ -24,13 +24,16 @@
         #gender-select input[type="radio"] { display: none; }
         #gender-select label { border: 2px solid #3c4043; }
         #gender-select input[type="radio"]:checked + span { color: #8ab4f8; }
+        .sidebar { background-color: #1A1A1A; }
+        .conversation-item.active { background-color: #262626; }
+        .conversation-item:hover { background-color: #222222; }
     </style>
 </head>
 <body class="text-gray-200">
     <!-- Name & Gender Prompt Modal -->
     <div id="name-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
         <div class="bg-[#1e1f20] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-white">Qui es-tu ?</h2>
+            <h2 class="text-2xl font-bold mb-4 text-white">Nouvelle Discussion</h2>
             <form id="name-form">
                 <div class="mb-4">
                     <input id="name-input" type="text" placeholder="Entre ton prénom..." class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg" required>
@@ -53,37 +56,63 @@
         </div>
     </div>
     
-    <div id="app-container" class="w-screen h-screen flex flex-col max-w-4xl mx-auto">
-        <!-- Header -->
-        <header class="p-4 flex items-center flex-shrink-0">
-            <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full mr-4 object-cover" onerror="this.src='https://placehold.co/40x40/1e1f20/FFFFFF?text=C'">
-            <div>
-                <h1 id="header-title" class="text-xl font-bold text-white">Chrice</h1>
-                <p id="header-subtitle" class="text-sm text-gray-400">En ligne</p>
-            </div>
-        </header>
+    <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-30"></div>
 
-        <!-- Chat Window -->
-        <div id="chat-window" class="flex-1 p-4 overflow-y-auto">
-            <!-- Messages will be populated here -->
-        </div>
-
-        <!-- Input Form Footer -->
-        <footer class="p-4 flex-shrink-0">
-            <form id="ai-form" class="flex items-center gap-3">
-                <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
-                    <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+    <div id="app-container" class="w-screen h-screen flex relative overflow-hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40">
+            <header class="p-4 border-b border-gray-800 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-white">Discussions</h1>
+                <button id="new-chat-btn" class="p-2 rounded-full hover:bg-gray-700">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                 </button>
-            </form>
-            <p class="text-xs text-center mt-2 text-gray-500">Les messages ne sont pas sauvegardés et disparaissent après la session.</p>
-        </footer>
+            </header>
+            <div id="conversation-list" class="flex-1 overflow-y-auto">
+                <!-- Conversation items will be populated here -->
+            </div>
+        </aside>
+
+        <!-- Main chat area -->
+        <main id="main-chat" class="flex-1 flex flex-col h-full w-full">
+            <header id="chat-header" class="hidden p-4 flex items-center flex-shrink-0 border-b border-gray-800">
+                <button id="menu-toggle-btn" class="md:hidden p-2 rounded-full mr-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full mr-4 object-cover" onerror="this.src='https://placehold.co/40x40/1e1f20/FFFFFF?text=C'">
+                <div>
+                    <h1 id="header-title" class="text-xl font-bold text-white">Chrice</h1>
+                    <p id="header-subtitle" class="text-sm text-gray-400">En ligne</p>
+                </div>
+            </header>
+
+            <div id="chat-window" class="flex-1 p-4 overflow-y-auto">
+                 <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center p-8">
+                     <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/1e1f20/FFFFFF?text=C'">
+                     <h2 class="text-2xl font-bold">Chrice</h2>
+                     <p class="text-gray-400 mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
+                </div>
+            </div>
+
+            <footer id="chat-footer" class="hidden p-4 flex-shrink-0">
+                <form id="ai-form" class="flex items-center gap-3">
+                    <label for="image-upload" class="p-2 rounded-full cursor-pointer hover:bg-gray-700">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    </label>
+                    <input type="file" id="image-upload" class="hidden" accept="image/*">
+                    <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                        <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </form>
+            </footer>
+        </main>
     </div>
 
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -99,6 +128,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
             
         // DOM Elements
         const nameModal = document.getElementById('name-modal');
@@ -108,71 +138,94 @@
         const chatWindow = document.getElementById('chat-window');
         const aiForm = document.getElementById('ai-form');
         const aiInput = document.getElementById('ai-input');
+        const newChatBtn = document.getElementById('sidebar-new-chat-btn');
+        const sidebar = document.getElementById('sidebar');
+        const menuToggleBtn = document.getElementById('menu-toggle-btn');
+        const conversationList = document.getElementById('conversation-list');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const chatHeader = document.getElementById('chat-header');
+        const chatFooter = document.getElementById('chat-footer');
+        const imageUploadInput = document.getElementById('image-upload');
         
         // State
-        let conversation = {};
+        let conversations = {};
+        let activeConversationId = null;
         let isWaitingForResponse = false;
 
         // --- Initialization ---
         function init() {
-            loadConversationFromLocalStorage();
-            if (conversation.userInfo) {
-                renderChat();
+            loadConversationsFromLocalStorage();
+            renderConversationList();
+             if (Object.keys(conversations).length > 0) {
+                selectConversation(Object.keys(conversations).sort((a,b) => b-a)[0]);
             } else {
-                nameModal.classList.remove('hidden');
+                welcomeScreen.classList.remove('hidden');
+                chatHeader.classList.add('hidden');
+                chatFooter.classList.add('hidden');
             }
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
             nameForm.addEventListener('submit', handleNameSubmit);
+            newChatBtn.addEventListener('click', () => nameModal.classList.remove('hidden'));
             aiForm.addEventListener('submit', handleFormSubmit);
-            
-            // Adjust height for mobile keyboard
-            if ('visualViewport' in window) {
-                const viewPort = window.visualViewport;
-                viewPort.onresize = () => {
-                    document.getElementById('app-container').style.height = `${viewPort.height}px`;
-                    scrollToBottom();
-                };
-            }
+            menuToggleBtn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+            imageUploadInput.addEventListener('change', handleImageUpload);
+            window.addEventListener('resize', scrollToBottom);
         }
 
         // --- User & Conversation Setup ---
-        function handleNameSubmit(e) {
+        async function handleNameSubmit(e) {
             e.preventDefault();
-            const userName = nameInput.value.trim();
-            const gender = document.querySelector('input[name="gender"]:checked')?.value;
+            let userName = nameInput.value.trim();
+            let gender = document.querySelector('input[name="gender"]:checked')?.value;
             
+            if (userName.toLowerCase() === 'alicia') {
+                gender = 'femme';
+            }
+
             if (userName && gender) {
-                const userId = 'user-' + Date.now();
-                conversation = {
-                    id: userId,
-                    userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
-                    history: []
-                };
+                await createNewConversation(userName, gender);
                 nameModal.classList.add('hidden');
-                addInitialMessage();
+                nameInput.value = '';
+                const checkedRadio = document.querySelector('input[name="gender"]:checked');
+                if(checkedRadio) checkedRadio.checked = false;
                 aiInput.focus();
             } else {
                 alert("Veuillez remplir tous les champs.");
             }
         }
         
-        function addInitialMessage() {
+        async function createNewConversation(userName, gender) {
+            const newId = 'conv-' + Date.now();
             const starter = "Salut ! Qu'est-ce qui t'amène ?";
-            addMessage(starter, 'assistant');
+            
+            conversations[newId] = {
+                id: newId,
+                userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
+                history: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
+            };
+            
+            saveConversationsToLocalStorage();
+            await syncConversationToFirebase(newId);
+            selectConversation(newId);
+            if (window.innerWidth < 768) sidebar.classList.add('-translate-x-full');
         }
 
         // --- Local & Firebase Storage ---
-        function loadConversationFromLocalStorage() {
-            const saved = localStorage.getItem('chrice_conversation');
-            conversation = saved ? JSON.parse(saved) : {};
+        function loadConversationsFromLocalStorage() {
+            const saved = localStorage.getItem('chrice_conversations');
+            conversations = saved ? JSON.parse(saved) : {};
         }
 
-        function saveConversationToLocalStorage() {
-            localStorage.setItem('chrice_conversation', JSON.stringify(conversation));
+        function saveConversationsToLocalStorage() {
+            localStorage.setItem('chrice_conversations', JSON.stringify(conversations));
         }
         
-        async function syncConversationToFirebase() {
-            if (!conversation.id) return;
-            const convData = conversation;
+        async function syncConversationToFirebase(convId) {
+            if (!conversations[convId]) return;
+            const convData = conversations[convId];
             const docRef = doc(db, 'conversations', convData.id);
             try {
                 await setDoc(docRef, convData, { merge: true });
@@ -182,30 +235,71 @@
         }
         
         // --- UI Rendering ---
-        function renderChat() {
-             headerTitle.textContent = `Discussion avec ${conversation.userInfo.name}`;
-             chatWindow.innerHTML = '';
-             conversation.history.forEach(msg => appendMessage(msg.content, msg.role, false));
+        function renderConversationList() {
+            const sortedIds = Object.keys(conversations).sort((a,b) => {
+                const lastMsgA = conversations[a].history[conversations[a].history.length - 1]?.timestamp || 0;
+                const lastMsgB = conversations[b].history[conversations[b].history.length - 1]?.timestamp || 0;
+                return lastMsgB - lastMsgA;
+            });
+
+            conversationList.innerHTML = '';
+            sortedIds.forEach(id => {
+                const conv = conversations[id];
+                const lastMessage = conv.history[conv.history.length-1]?.content || 'Nouvelle discussion';
+                const item = document.createElement('div');
+                item.className = `conversation-item p-4 cursor-pointer border-b border-gray-800 ${id === activeConversationId ? 'active' : ''}`;
+                item.dataset.id = id;
+                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage.includes('<img') ? '[Photo]' : lastMessage}</p>`;
+                item.addEventListener('click', () => selectConversation(id));
+                conversationList.appendChild(item);
+            });
+        }
+        
+        function selectConversation(id) {
+            activeConversationId = id;
+            renderChatWindow();
+            renderConversationList();
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+            }
         }
 
+        function renderChatWindow() {
+             if (!activeConversationId) {
+                welcomeScreen.classList.remove('hidden');
+                chatHeader.classList.add('hidden');
+                chatFooter.classList.add('hidden');
+                chatWindow.innerHTML = '';
+                return;
+             };
+             
+             welcomeScreen.classList.add('hidden');
+             chatHeader.classList.remove('hidden');
+             chatFooter.classList.remove('hidden');
+
+             const conv = conversations[activeConversationId];
+             headerTitle.textContent = `Discussion avec ${conv.userInfo.name}`;
+             chatWindow.innerHTML = '';
+             conv.history.forEach(msg => appendMessage(msg.content, msg.role, false));
+             scrollToBottom();
+        }
+        
         // --- Form & AI Interaction ---
         async function handleFormSubmit(e) {
             e.preventDefault();
-            if (isWaitingForResponse) return;
+            if (isWaitingForResponse || !activeConversationId) return;
             
             const userPrompt = aiInput.value.trim();
             if (!userPrompt) return;
             
-            const conv = conversation;
+            const conv = conversations[activeConversationId];
             const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
             
             if (conv.userInfo.mood === 'angry' && !isApology) {
                 conv.userInfo.angryCount = (conv.userInfo.angryCount || 0) + 1;
-                addMessage(userPrompt, 'user');
+                addMessage(userPrompt, 'user', activeConversationId);
                 aiInput.value = '';
-                if (conv.userInfo.angryCount < 3) {
-                    return; // AI stays silent
-                }
+                if (conv.userInfo.angryCount < 3) return;
             }
             
             if (isApology || (conv.userInfo.mood === 'angry' && conv.userInfo.angryCount >= 3)) {
@@ -213,7 +307,7 @@
                 conv.userInfo.angryCount = 0;
             }
             
-            addMessage(userPrompt, 'user');
+            addMessage(userPrompt, 'user', activeConversationId);
             aiInput.value = '';
             appendMessage('', 'loader');
             isWaitingForResponse = true;
@@ -224,25 +318,64 @@
                 if(response.includes("[SET_MOOD_ANGRY]")) {
                     conv.userInfo.mood = 'angry';
                     conv.userInfo.angryCount = 0;
-                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
+                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant', activeConversationId);
                 } else {
-                    addMessage(response, 'assistant');
+                    addMessage(response, 'assistant', activeConversationId);
                 }
             } catch (error) {
                 removeLoader();
-                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
+                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant', activeConversationId);
                 console.error("API Error:", error);
             } finally {
                 isWaitingForResponse = false;
             }
         }
 
+        async function handleImageUpload(e) {
+            if (!activeConversationId) return;
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const dataUrl = event.target.result;
+                addMessage(`<img src="${dataUrl}" class="rounded-lg max-w-xs" alt="Prévisualisation">`, 'user', activeConversationId);
+                appendMessage('', 'loader');
+
+                try {
+                    const storageRef = ref(storage, `images/${activeConversationId}/${Date.now()}-${file.name}`);
+                    const uploadResult = await uploadString(storageRef, dataUrl, 'data_url');
+                    const downloadURL = await getDownloadURL(uploadResult.ref);
+                    
+                    const conv = conversations[activeConversationId];
+                    const photoMessage = `<img src="${downloadURL}" class="rounded-lg max-w-xs" alt="Image envoyée">`;
+                    conv.history[conv.history.length-1].content = photoMessage; // Update last message with real URL
+                    saveConversationsToLocalStorage();
+                    await syncConversationToFirebase(activeConversationId);
+                    
+                    const response = await getAiResponse('[USER_SENT_A_PHOTO]', conv.history, conv.userInfo.name, conv.userInfo.gender);
+                    removeLoader();
+                    addMessage(response, 'assistant', activeConversationId);
+                } catch (error) {
+                    removeLoader();
+                    addMessage("Désolé, l'envoi de l'image a échoué.", 'assistant', activeConversationId);
+                    console.error("Image Upload Error:", error);
+                }
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        }
+
         // --- Message Handling & Display ---
-        function addMessage(content, role) {
-            conversation.history.push({ role, content });
-            appendMessage(content, role);
-            saveConversationToLocalStorage();
-            syncConversationToFirebase();
+        function addMessage(content, role, convId) {
+            if (!convId) return;
+            conversations[convId].history.push({ role, content, timestamp: Date.now() });
+            if (convId === activeConversationId) {
+                appendMessage(content, role);
+            }
+            saveConversationsToLocalStorage();
+            syncConversationToFirebase(convId);
+            renderConversationList();
         }
         
         function appendMessage(text, type, isNew = true) {
@@ -254,7 +387,7 @@
                 messageWrapper.id = 'loader-message';
                 messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
             } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
             }
             messageWrapper.appendChild(messageBubble);
             chatWindow.appendChild(messageWrapper);
@@ -262,7 +395,9 @@
         }
         
         function scrollToBottom() {
-            chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+            setTimeout(() => {
+                chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+            }, 100);
         }
         
         function removeLoader() {
