@@ -76,7 +76,7 @@
             <div id="welcome-screen" class="flex-1 flex flex-col items-center justify-center h-full text-center p-8">
                  <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/1e1f20/FFFFFF?text=C'">
                  <h2 class="text-2xl font-bold">Chrice</h2>
-                 <p class="text-gray-400 mb-6">Sélectionnez ou créez une discussion pour commencer.</p>
+                 <p class="text-gray-400 mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
                  <button id="welcome-new-chat-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">Nouvelle Discussion</button>
             </div>
 
@@ -96,6 +96,10 @@
 
                 <footer class="p-4 flex-shrink-0">
                     <form id="ai-form" class="flex items-center gap-3">
+                         <label for="image-upload" class="p-2 rounded-full cursor-pointer hover:bg-gray-700">
+                             <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                         </label>
+                         <input type="file" id="image-upload" class="hidden" accept="image/*">
                         <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
                             <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
@@ -111,6 +115,7 @@
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -126,6 +131,7 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
             
         // DOM Elements
         const nameModal = document.getElementById('name-modal');
@@ -143,6 +149,7 @@
         const welcomeScreen = document.getElementById('welcome-screen');
         const chatArea = document.getElementById('chat-area');
         const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const imageUploadInput = document.getElementById('image-upload');
         
         // State
         let conversations = {};
@@ -172,6 +179,7 @@
             aiForm.addEventListener('submit', handleFormSubmit);
             menuToggleBtn.addEventListener('click', toggleSidebar);
             sidebarOverlay.addEventListener('click', toggleSidebar);
+            imageUploadInput.addEventListener('change', handleImageUpload);
         }
         
         function toggleSidebar() {
@@ -209,9 +217,15 @@
                 userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
                 history: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
             };
-            saveConversationsToLocalStorage();
-            syncConversationToFirebase(newId);
+            addMessageToLocalStorage(newId, starter, 'assistant');
             selectConversation(newId);
+        }
+
+        function addMessageToLocalStorage(convId, content, role) {
+             if (!conversations[convId]) return;
+             conversations[convId].history.push({ role, content, timestamp: Date.now() });
+             saveConversationsToLocalStorage();
+             syncConversationToFirebase(convId);
         }
 
         // --- Local & Firebase Storage ---
@@ -250,7 +264,7 @@
                 const item = document.createElement('div');
                 item.className = `conversation-item p-4 cursor-pointer border-b border-gray-800 ${id === activeConversationId ? 'active' : ''}`;
                 item.dataset.id = id;
-                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage}</p>`;
+                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage.includes('<img') ? '[Photo]' : lastMessage}</p>`;
                 item.addEventListener('click', () => selectConversation(id));
                 conversationList.appendChild(item);
             });
@@ -274,7 +288,6 @@
              welcomeScreen.classList.add('hidden');
              chatArea.classList.remove('hidden');
              chatArea.classList.add('flex');
-
 
              const conv = conversations[activeConversationId];
              headerTitle.textContent = `Discussion avec ${conv.userInfo.name}`;
@@ -338,6 +351,43 @@
                 isWaitingForResponse = false;
             }
         }
+        
+        async function handleImageUpload(e) {
+            if (!activeConversationId) return;
+            const file = e.target.files[0];
+            if (!file) return;
+
+            addMessage(`<div class="text-center text-gray-400">Envoi de l'image...</div>`, 'system', activeConversationId);
+            
+            try {
+                const storageRef = ref(storage, `images/${activeConversationId}/${Date.now()}-${file.name}`);
+                const dataUrl = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+
+                await uploadString(storageRef, dataUrl, 'data_url');
+                const downloadURL = await getDownloadURL(storageRef);
+                const content = `<img src="${downloadURL}" class="rounded-lg max-w-xs" alt="Image envoyée">`;
+                
+                // Replace the temporary message with the actual image
+                const conv = conversations[activeConversationId];
+                conv.history.pop(); // Remove "Envoi de l'image..."
+                addMessage(content, 'user', activeConversationId);
+                
+                appendMessage('', 'loader');
+                const response = await getAiResponse('[USER_SENT_A_PHOTO]', conv.history, conv.userInfo.name, conv.userInfo.gender);
+                removeLoader();
+                addMessage(response, 'assistant', activeConversationId);
+
+            } catch (error) {
+                 removeLoader();
+                 addMessage("Désolé, l'envoi de l'image a échoué.", 'assistant', activeConversationId);
+                 console.error("Image Upload Error:", error);
+            }
+            e.target.value = '';
+        }
 
         // --- Message Handling & Display ---
         function addMessage(content, role, convId) {
@@ -362,7 +412,7 @@
                 messageWrapper.id = 'loader-message';
                 messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
             } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
             }
             messageWrapper.appendChild(messageBubble);
             chatWindow.appendChild(messageWrapper);
