@@ -9,53 +9,34 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-main: #121212; --bg-sidebar: #1A1A1A; --bg-chat-image: url('https://i.pinimg.com/736x/85/ec/df/85ecdf1c36224302641c034445794348.jpg');
-            --bg-input: #202C33; --border-color: #3A3A3A; --text-main: #EAEAEA;
-        }
-        .theme-light {
-            --bg-main: #F0F2F5; --bg-sidebar: #FFFFFF; --bg-chat-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg');
-            --bg-input: #F0F2F5; --border-color: #DDDDDD; --text-main: #111B21;
-        }
-        .theme-love {
-            --bg-main: #2E1437; --bg-sidebar: #41224E; --bg-chat-image: url('https://i.pinimg.com/originals/a7/a5/e3/a7a5e353538c0b2413697e8416399518.jpg');
-            --bg-input: #41224E; --border-color: #6B447A; --text-main: #FAD7E3;
-        }
-        body { font-family: 'Inter', sans-serif; background-color: #000000; overflow: hidden; }
-        .chat-container { background-color: var(--bg-main); color: var(--text-main); }
-        .sidebar { background-color: var(--bg-sidebar); }
-        .chat-window { background-image: var(--bg-chat-image); background-size: cover; background-position: center; }
-        .chat-input-area { background-color: var(--bg-input); }
-        .chat-input { background-color: #2A3942; border: 1px solid var(--border-color); color: var(--text-main); }
-        .theme-light .chat-input { background-color: #FFFFFF; }
-        .theme-love .chat-input { background-color: #5A3369; }
-        .bubble { box-shadow: 0 1px 1px rgba(0,0,0,0.1); position: relative; }
-        .user-message-bubble { background-color: #005C4B; color: #E9EDEF; }
-        .ai-message-bubble { background-color: #202C33; color: #E9EDEF; }
-        .theme-light .user-message-bubble { background-color: #DCF8C6; color: #111B21;}
-        .theme-light .ai-message-bubble { background-color: #FFFFFF; color: #111B21;}
-        .theme-love .user-message-bubble { background-color: #E94057; color: white;}
-        .theme-love .ai-message-bubble { background-color: #5A3369; color: white;}
-        .conversation-item.active { background-color: #333; }
-        .theme-light .conversation-item.active { background-color: #f0f2f5; }
-        .theme-love .conversation-item.active { background-color: #5A3369; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #88888888; border-radius: 3px; }
+        body { font-family: 'Inter', sans-serif; background-color: #131314; }
+        .user-message { background: linear-gradient(to right, #1a64d9, #1f77f2); }
+        .ai-message { background-color: #1e1f20; }
+        .chat-input { background-color: #1e1f20; border: 1px solid #3c4043; }
+        .chat-input:focus { outline: none; border-color: #8ab4f8; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1f20; }
+        ::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 4px; }
+        .loader-dot { height: 8px; width: 8px; border-radius: 50%; background-color: #8ab4f8; animation: bounce 1.4s infinite ease-in-out both; }
+        .loader-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loader-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        #gender-select input[type="radio"] { display: none; }
+        #gender-select label { border: 2px solid #3c4043; }
+        #gender-select input[type="radio"]:checked + span { color: #8ab4f8; }
     </style>
 </head>
-<body>
-    <!-- Modals and other HTML structure remain the same -->
+<body class="text-gray-200">
+    <!-- Name & Gender Prompt Modal -->
     <div id="name-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
-        <div class="bg-[#1A1A1A] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-white">Nouvelle Discussion</h2>
+        <div class="bg-[#1e1f20] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
+            <h2 class="text-2xl font-bold mb-4 text-white">Qui es-tu ?</h2>
             <form id="name-form">
                 <div class="mb-4">
-                    <label for="name-input" class="block text-left text-sm font-medium text-gray-400 mb-1">Votre prénom</label>
-                    <input id="name-input" type="text" placeholder="Ex: Alex" class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg" required>
+                    <input id="name-input" type="text" placeholder="Entre ton prénom..." class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg" required>
                 </div>
-                 <div class="mb-4">
-                    <label class="block text-left text-sm font-medium text-gray-400 mb-2">Vous êtes</label>
+                 <div class="mb-6">
+                    <label class="block text-center text-sm font-medium text-gray-400 mb-2">Je suis...</label>
                     <div class="flex justify-center gap-4" id="gender-select">
                         <label class="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-all">
                             <input type="radio" name="gender" value="homme" required>
@@ -67,383 +48,201 @@
                         </label>
                     </div>
                 </div>
-                <div class="mb-6">
-                    <label for="theme-select" class="block text-left text-sm font-medium text-gray-400 mb-1">Thème de la discussion</label>
-                    <select id="theme-select" class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg">
-                        <option value="dark">Sombre (Défaut)</option>
-                        <option value="light">Clair</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-[#00A884] hover:bg-[#008069] text-white font-bold py-3 rounded-lg">Commencer</button>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Commencer à discuter</button>
             </form>
         </div>
     </div>
     
-    <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-30"></div>
+    <div id="app-container" class="w-screen h-screen flex flex-col max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="p-4 flex items-center flex-shrink-0">
+            <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full mr-4 object-cover" onerror="this.src='https://placehold.co/40x40/1e1f20/FFFFFF?text=C'">
+            <div>
+                <h1 id="header-title" class="text-xl font-bold text-white">Chrice</h1>
+                <p id="header-subtitle" class="text-sm text-gray-400">En ligne</p>
+            </div>
+        </header>
 
-    <div id="app-container" class="chat-container w-screen h-screen flex relative overflow-hidden">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40" style="border-color: var(--border-color);">
-            <header class="p-3 flex justify-between items-center flex-shrink-0" style="background-color: #202C33;">
-                 <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full object-cover" onerror="this.src='https://placehold.co/40x40/075E54/FFFFFF?text=C'">
-                <button id="sidebar-new-chat-btn" class="p-2 rounded-full">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        <!-- Chat Window -->
+        <div id="chat-window" class="flex-1 p-4 overflow-y-auto">
+            <!-- Messages will be populated here -->
+        </div>
+
+        <!-- Input Form Footer -->
+        <footer class="p-4 flex-shrink-0">
+            <form id="ai-form" class="flex items-center gap-3">
+                <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                    <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
-            </header>
-            <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
-        </aside>
-
-        <!-- Main chat area -->
-        <main id="main-chat" class="flex-1 flex flex-col h-full w-full">
-            <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center p-8">
-                 <img id="welcome-avatar" src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/121212/E0E0E0?text=C'">
-                 <h2 class="text-2xl font-bold">Chrice</h2>
-                 <p style="color: var(--text-light);" class="mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
-                 <button id="welcome-new-chat-btn" class="bg-[#00A884] hover:bg-[#008069] text-white font-bold py-3 px-6 rounded-lg">Nouvelle Discussion</button>
-            </div>
-            
-            <div id="chat-area" class="hidden flex-1 flex flex-col">
-                <header class="p-3 flex items-center shadow-md" style="background-color: #202C33;">
-                    <button id="menu-toggle-btn" class="md:hidden p-2 rounded-full mr-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    <img id="chat-avatar" src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full mr-3 object-cover" onerror="this.src='https://placehold.co/40x40/075E54/FFFFFF?text=C'">
-                    <h2 id="chat-title" class="text-lg font-semibold truncate"></h2>
-                </header>
-                <div id="chat-window" class="flex-1 p-4 overflow-y-auto"></div>
-                <footer class="chat-input-area p-2">
-                    <form id="ai-form" class="flex items-center gap-3">
-                         <label for="image-upload" class="p-2 rounded-full cursor-pointer text-gray-500">
-                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                         </label>
-                         <input type="file" id="image-upload" class="hidden" accept="image/*">
-                        <input id="ai-input" type="text" placeholder="Message" class="chat-input w-full rounded-full py-2 px-4 text-gray-800">
-                        <button type="submit" class="bg-[#00A884] hover:bg-[#008069] text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.789 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
-                        </button>
-                    </form>
-                </footer>
-            </div>
-        </main>
+            </form>
+            <p class="text-xs text-center mt-2 text-gray-500">Les messages ne sont pas sauvegardés et disparaissent après la session.</p>
+        </footer>
     </div>
 
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, serverTimestamp, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyD1Kzvy-wh6BoIOMTgX8FbbCmqOTdC47Bs",
-          authDomain: "chriceai.firebaseapp.com",
-          projectId: "chriceai",
-          storageBucket: "chriceai.appspot.com",
-          messagingSenderId: "687417014846",
-          appId: "1:687417014846:web:1ebb57b4001cd5ce94ef6f",
-          measurementId: "G-FSKD0Y4BPZ"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // DOM Elements
-        const nameModal = document.getElementById('name-modal');
-        const nameForm = document.getElementById('name-form');
-        const nameInput = document.getElementById('name-input');
-        const genderSelect = document.getElementById('gender-select');
-        const themeSelect = document.getElementById('theme-select');
-        const appContainer = document.getElementById('app-container');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        const menuToggleBtn = document.getElementById('menu-toggle-btn');
-        const sidebarNewChatBtn = document.getElementById('sidebar-new-chat-btn');
-        const welcomeNewChatBtn = document.getElementById('welcome-new-chat-btn');
-        const conversationList = document.getElementById('conversation-list');
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const chatArea = document.getElementById('chat-area');
-        const chatTitle = document.getElementById('chat-title');
-        const chatWindow = document.getElementById('chat-window');
-        const aiForm = document.getElementById('ai-form');
-        const aiInput = document.getElementById('ai-input');
-        const imageUploadInput = document.getElementById('image-upload');
-        
-        // State
-        let conversations = {};
-        let activeConversationId = null;
-
-        // --- Initialization ---
-        function init() {
-            loadConversationsFromLocalStorage();
-            renderConversationList();
-            if (Object.keys(conversations).length > 0) {
-                selectConversation(Object.keys(conversations).sort((a,b) => b - a)[0]);
-            }
-            setupEventListeners();
-        }
-        
-        function setupEventListeners() {
-            nameForm.addEventListener('submit', handleNameSubmit);
-            sidebarNewChatBtn.addEventListener('click', () => nameModal.classList.remove('hidden'));
-            welcomeNewChatBtn.addEventListener('click', () => nameModal.classList.remove('hidden'));
-            aiForm.addEventListener('submit', handleFormSubmit);
-            menuToggleBtn.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-            genderSelect.addEventListener('change', handleGenderChange);
-            imageUploadInput.addEventListener('change', handleImageUpload);
-        }
-        
-        // --- UI & Theme ---
-        function toggleSidebar() {
-            sidebar.classList.toggle('-translate-x-full');
-            sidebarOverlay.classList.toggle('hidden');
-        }
-
-        async function handleNameSubmit(e) {
-            e.preventDefault();
-            const submitButton = nameForm.querySelector('button[type="submit"]');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const nameModal = document.getElementById('name-modal');
+            const nameForm = document.getElementById('name-form');
+            const nameInput = document.getElementById('name-input');
+            const headerTitle = document.getElementById('header-title');
+            const chatWindow = document.getElementById('chat-window');
+            const aiForm = document.getElementById('ai-form');
+            const aiInput = document.getElementById('ai-input');
             
-            const userName = nameInput.value.trim();
-            const gender = document.querySelector('input[name="gender"]:checked')?.value;
-            
-            if (!userName || !gender) {
-                alert("Veuillez remplir tous les champs.");
-                return;
-            }
-            
-            submitButton.disabled = true;
-            submitButton.textContent = 'Création...';
+            // State
+            let conversationHistory = [];
+            let userInfo = {};
+            let isWaitingForResponse = false;
 
-            try {
-                await createNewConversation(userName, gender);
-                nameModal.classList.add('hidden');
-                nameInput.value = '';
-                const checkedRadio = document.querySelector('input[name="gender"]:checked');
-                if(checkedRadio) checkedRadio.checked = false;
-            } catch (error) {
-                console.error("Failed to create conversation:", error);
-                alert("Erreur de base de données. Vérifiez vos règles de sécurité Firebase.");
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Commencer';
-            }
-        }
-        
-        function handleGenderChange() {
-            // Logic can be added here if needed in the future
-        }
-
-        // --- Local & Firebase Conversation Logic ---
-        function loadConversationsFromLocalStorage() {
-            const saved = localStorage.getItem('chrice_conversations');
-            conversations = saved ? JSON.parse(saved) : {};
-        }
-
-        function saveConversationsToLocalStorage() {
-            localStorage.setItem('chrice_conversations', JSON.stringify(conversations));
-        }
-        
-        function renderConversationList() {
-            const sortedIds = Object.keys(conversations).sort((a,b) => conversations[b].lastUpdated - conversations[a].lastUpdated);
-            conversationList.innerHTML = '';
-            sortedIds.forEach(id => {
-                const conv = conversations[id];
-                const lastMessage = conv.messages?.[conv.messages.length - 1]?.content || '...';
-                const item = document.createElement('div');
-                item.className = `conversation-item p-4 cursor-pointer border-b border-gray-200 ${id === activeConversationId ? 'active' : ''}`;
-                item.dataset.id = id;
-                item.innerHTML = `<h3 class="font-semibold truncate text-gray-800">${conv.userName}</h3><p class="text-xs truncate text-gray-500">${lastMessage.includes('<img') ? '[Photo]' : lastMessage}</p>`;
-                item.addEventListener('click', () => selectConversation(id));
-                conversationList.appendChild(item);
-            });
-        }
-
-        async function createNewConversation(userName, gender) {
-            const newId = Date.now().toString();
-            const starter = [ "Tu penses à quoi là ? 😉", "Raconte-moi un truc...", "Hey, ça te dit de parler de projets un peu fous ?" ][Math.floor(Math.random() * 3)];
-            
-            conversations[newId] = {
-                id: newId,
-                userName,
-                gender,
-                mood: 'normal',
-                angryMessageCount: 0,
-                deviceInfo: navigator.userAgent,
-                createdAt: Date.now(),
-                lastUpdated: Date.now(),
-                messages: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
-            };
-            
-            saveConversationsToLocalStorage();
-            await syncConversationToFirebase(newId);
-            
-            selectConversation(newId);
-            if (window.innerWidth < 768) toggleSidebar();
-        }
-
-        async function selectConversation(id) {
-            activeConversationId = id;
-            renderChatWindow(id);
-            renderConversationList();
-            if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
-               toggleSidebar();
-            }
-        }
-        
-        function renderChatWindow(id) {
-            if (!id || !conversations[id]) {
-                welcomeScreen.classList.remove('hidden');
-                chatArea.classList.add('hidden');
-                return;
-            }
-            welcomeScreen.classList.add('hidden');
-            chatArea.classList.remove('hidden');
-            const conv = conversations[id];
-            chatTitle.textContent = `Discussion avec ${conv.userName}`;
-            chatWindow.innerHTML = '';
-            conv.messages.forEach(msg => appendMessage(msg.content, msg.role));
-        }
-        
-        function handleImageUpload(event) {
-            if (!activeConversationId) return;
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imageUrl = e.target.result;
-                const content = `<img src="${imageUrl}" class="rounded-lg max-w-xs" alt="Image envoyée">`;
-                addMessage(content, 'user');
-                addMessage('', 'loader');
+            // --- Initialization ---
+            function init() {
+                nameModal.classList.remove('hidden');
+                nameForm.addEventListener('submit', handleNameSubmit);
+                aiForm.addEventListener('submit', handleFormSubmit);
                 
-                getAiResponse('[USER_SENT_A_PHOTO]', conversations[activeConversationId].messages, conversations[activeConversationId].userName, conversations[activeConversationId].gender)
-                    .then(response => {
-                        removeLoader();
-                        addMessage(response, 'assistant');
-                    }).catch(error => {
-                        removeLoader();
-                        addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
-                        console.error("API Error:", error);
-                    });
-            };
-            reader.readAsDataURL(file);
-            event.target.value = ''; // Reset input
-        }
+                // Adjust height for mobile keyboard
+                if ('visualViewport' in window) {
+                    const viewPort = window.visualViewport;
+                    viewPort.onresize = () => {
+                        const appContainer = document.getElementById('app-container');
+                        appContainer.style.height = `${viewPort.height}px`;
+                        scrollToBottom();
+                    };
+                }
+            }
 
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            const userPrompt = aiInput.value.trim();
-            if (!userPrompt || !activeConversationId) return;
+            // --- User & Conversation Setup ---
+            function handleNameSubmit(e) {
+                e.preventDefault();
+                const userName = nameInput.value.trim();
+                const gender = document.querySelector('input[name="gender"]:checked')?.value;
+                
+                if (userName && gender) {
+                    userInfo = { name: userName, gender: gender, mood: 'normal', angryCount: 0 };
+                    nameModal.classList.add('hidden');
+                    headerTitle.textContent = `Discussion avec ${userName}`;
+                    addInitialMessage();
+                    aiInput.focus();
+                } else {
+                    alert("Veuillez remplir tous les champs.");
+                }
+            }
             
-            const conv = conversations[activeConversationId];
-            const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
-            
-            if (conv.mood === 'angry' && !isApology) {
-                conv.angryMessageCount = (conv.angryMessageCount || 0) + 1;
+            function addInitialMessage() {
+                const starter = "Salut ! Qu'est-ce qui t'amène ?";
+                appendMessage(starter, 'assistant');
+                conversationHistory.push({ role: 'assistant', content: starter });
+            }
+
+            // --- Form & AI Interaction ---
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                if (isWaitingForResponse) return;
+                
+                const userPrompt = aiInput.value.trim();
+                if (!userPrompt) return;
+                
+                const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
+                
+                if (userInfo.mood === 'angry' && !isApology) {
+                    userInfo.angryCount = (userInfo.angryCount || 0) + 1;
+                    addMessage(userPrompt, 'user');
+                    aiInput.value = '';
+                    if (userInfo.angryCount < 3) {
+                        return; // AI stays silent
+                    }
+                }
+                
+                if (isApology || (userInfo.mood === 'angry' && userInfo.angryCount >= 3)) {
+                    userInfo.mood = 'normal';
+                    userInfo.angryCount = 0;
+                }
+                
                 addMessage(userPrompt, 'user');
                 aiInput.value = '';
-                if (conv.angryMessageCount < 3) {
-                    saveConversationsToLocalStorage();
-                    await syncConversationToFirebase(activeConversationId);
-                    return; // AI stays silent
+                appendMessage('', 'loader');
+                isWaitingForResponse = true;
+
+                try {
+                    const response = await getAiResponse(userPrompt, conversationHistory, userInfo.name, userInfo.gender);
+                    removeLoader();
+                    if(response.includes("[SET_MOOD_ANGRY]")) {
+                        userInfo.mood = 'angry';
+                        userInfo.angryCount = 0;
+                        addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
+                    } else {
+                        addMessage(response, 'assistant');
+                    }
+                } catch (error) {
+                    removeLoader();
+                    addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
+                    console.error("API Error:", error);
+                } finally {
+                    isWaitingForResponse = false;
                 }
             }
 
-            if (isApology || (conv.mood === 'angry' && conv.angryMessageCount >= 3)) {
-                conv.mood = 'normal';
-                conv.angryMessageCount = 0;
+            // --- Message Handling & Display ---
+            function addMessage(content, role) {
+                conversationHistory.push({ role, content });
+                appendMessage(content, role);
             }
-
-            addMessage(userPrompt, 'user');
-            aiInput.value = '';
-            appendMessage('', 'loader');
-
-            try {
-                const response = await getAiResponse(userPrompt, conv.messages, conv.userName, conv.gender);
-                removeLoader();
-                if(response.includes("[SET_MOOD_ANGRY]")) {
-                    conv.mood = 'angry';
-                    conv.angryMessageCount = 0;
-                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
+            
+            function appendMessage(text, type) {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+                const messageBubble = document.createElement('div');
+                messageBubble.className = `p-3 rounded-2xl max-w-[80%] ${type === 'user' ? 'user-message rounded-br-none' : 'ai-message rounded-bl-none'}`;
+                if (type === 'loader') {
+                    messageWrapper.id = 'loader-message';
+                    messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
                 } else {
-                    addMessage(response, 'assistant');
+                    messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
                 }
-            } catch (error) {
-                removeLoader();
-                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
-                console.error("API Error:", error);
-            }
-        }
-        
-        // --- Message & Sync ---
-        async function addMessage(content, role) {
-            if (!activeConversationId) return;
-            const conv = conversations[activeConversationId];
-            conv.messages.push({ role, content, timestamp: Date.now() });
-            conv.lastUpdated = Date.now();
-            saveConversationsToLocalStorage();
-            appendMessage(content, role);
-            await syncConversationToFirebase(activeConversationId);
-            renderConversationList();
-        }
-        
-        async function syncConversationToFirebase(convId) {
-            if (!convId || !conversations[convId]) return;
-            const convData = conversations[convId];
-            const docId = `${convData.userName.replace(/\s+/g, '_')}-${convData.id}`;
-            const convRef = doc(db, 'conversations', docId); 
-            
-            try {
-                await setDoc(convRef, convData, { merge: true });
-            } catch (error) {
-                console.error("Firebase sync failed:", error);
-            }
-        }
-
-        function appendMessage(text, type) {
-            const messageWrapper = document.createElement('div');
-            messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
-            const messageBubble = document.createElement('div');
-            messageBubble.className = `bubble p-2 px-3 rounded-lg max-w-[80%] text-gray-800 ${type === 'user' ? 'user-message-bubble self-end' : 'ai-message-bubble self-start'}`;
-            if (type === 'loader') {
-                messageWrapper.id = 'loader-message';
-                messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
-            } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
-            }
-            messageWrapper.appendChild(messageBubble);
-            chatWindow.appendChild(messageWrapper);
-            scrollToBottom();
-        }
-        
-        function scrollToBottom() {
-            chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
-        }
-        function removeLoader() { document.getElementById('loader-message')?.remove(); }
-
-        // --- Gemini API Call via Netlify Function ---
-        async function getAiResponse(prompt, history, currentUser, gender) {
-            const netlifyFunctionUrl = '/.netlify/functions/gemini-proxy';
-
-            const payload = { prompt, history, currentUser, gender };
-
-            const response = await fetch(netlifyFunctionUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                 const errorText = await response.text();
-                 throw new Error(`Netlify function error: ${response.status} ${errorText}`);
+                messageWrapper.appendChild(messageBubble);
+                chatWindow.appendChild(messageWrapper);
+                scrollToBottom();
             }
             
-            const result = await response.json();
-            return result.text;
-        }
-        
-        // --- Main Initialization Call ---
-        init();
+            function scrollToBottom() {
+                chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+            }
+            
+            function removeLoader() {
+                const loader = document.getElementById('loader-message');
+                if (loader) loader.remove();
+            }
+
+            // --- Gemini API Call via Netlify Function ---
+            async function getAiResponse(prompt, history, currentUser, gender) {
+                const netlifyFunctionUrl = '/.netlify/functions/gemini-proxy';
+
+                const payload = {
+                    prompt,
+                    history,
+                    currentUser,
+                    gender
+                };
+
+                const response = await fetch(netlifyFunctionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`Netlify function error: ${response.status} ${errorText}`);
+                }
+                
+                const result = await response.json();
+                return result.text;
+            }
+            
+            init();
+        });
     </script>
 </body>
 </html>
