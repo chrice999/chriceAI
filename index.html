@@ -80,169 +80,223 @@
         </footer>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // DOM Elements
-            const nameModal = document.getElementById('name-modal');
-            const nameForm = document.getElementById('name-form');
-            const nameInput = document.getElementById('name-input');
-            const headerTitle = document.getElementById('header-title');
-            const chatWindow = document.getElementById('chat-window');
-            const aiForm = document.getElementById('ai-form');
-            const aiInput = document.getElementById('ai-input');
-            
-            // State
-            let conversationHistory = [];
-            let userInfo = {};
-            let isWaitingForResponse = false;
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-            // --- Initialization ---
-            function init() {
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyD1Kzvy-wh6BoIOMTgX8FbbCmqOTdC47Bs",
+          authDomain: "chriceai.firebaseapp.com",
+          projectId: "chriceai",
+          storageBucket: "chriceai.appspot.com",
+          messagingSenderId: "687417014846",
+          appId: "1:687417014846:web:1ebb57b4001cd5ce94ef6f",
+          measurementId: "G-FSKD0Y4BPZ"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+            
+        // DOM Elements
+        const nameModal = document.getElementById('name-modal');
+        const nameForm = document.getElementById('name-form');
+        const nameInput = document.getElementById('name-input');
+        const headerTitle = document.getElementById('header-title');
+        const chatWindow = document.getElementById('chat-window');
+        const aiForm = document.getElementById('ai-form');
+        const aiInput = document.getElementById('ai-input');
+        
+        // State
+        let conversation = {};
+        let isWaitingForResponse = false;
+
+        // --- Initialization ---
+        function init() {
+            loadConversationFromLocalStorage();
+            if (conversation.userInfo) {
+                renderChat();
+            } else {
                 nameModal.classList.remove('hidden');
-                nameForm.addEventListener('submit', handleNameSubmit);
-                aiForm.addEventListener('submit', handleFormSubmit);
-                
-                // Adjust height for mobile keyboard
-                if ('visualViewport' in window) {
-                    const viewPort = window.visualViewport;
-                    viewPort.onresize = () => {
-                        const appContainer = document.getElementById('app-container');
-                        appContainer.style.height = `${viewPort.height}px`;
-                        scrollToBottom();
-                    };
-                }
             }
-
-            // --- User & Conversation Setup ---
-            function handleNameSubmit(e) {
-                e.preventDefault();
-                const userName = nameInput.value.trim();
-                const gender = document.querySelector('input[name="gender"]:checked')?.value;
-                
-                if (userName && gender) {
-                    userInfo = { name: userName, gender: gender, mood: 'normal', angryCount: 0 };
-                    nameModal.classList.add('hidden');
-                    headerTitle.textContent = `Discussion avec ${userName}`;
-                    addInitialMessage();
-                    aiInput.focus();
-                } else {
-                    alert("Veuillez remplir tous les champs.");
-                }
-            }
+            nameForm.addEventListener('submit', handleNameSubmit);
+            aiForm.addEventListener('submit', handleFormSubmit);
             
-            function addInitialMessage() {
-                const starter = "Salut ! Qu'est-ce qui t'amène ?";
-                appendMessage(starter, 'assistant');
-                conversationHistory.push({ role: 'assistant', content: starter });
+            // Adjust height for mobile keyboard
+            if ('visualViewport' in window) {
+                const viewPort = window.visualViewport;
+                viewPort.onresize = () => {
+                    document.getElementById('app-container').style.height = `${viewPort.height}px`;
+                    scrollToBottom();
+                };
             }
+        }
 
-            // --- Form & AI Interaction ---
-            async function handleFormSubmit(e) {
-                e.preventDefault();
-                if (isWaitingForResponse) return;
-                
-                const userPrompt = aiInput.value.trim();
-                if (!userPrompt) return;
-                
-                const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
-                
-                if (userInfo.mood === 'angry' && !isApology) {
-                    userInfo.angryCount = (userInfo.angryCount || 0) + 1;
-                    addMessage(userPrompt, 'user');
-                    aiInput.value = '';
-                    if (userInfo.angryCount < 3) {
-                        return; // AI stays silent
-                    }
-                }
-                
-                if (isApology || (userInfo.mood === 'angry' && userInfo.angryCount >= 3)) {
-                    userInfo.mood = 'normal';
-                    userInfo.angryCount = 0;
-                }
-                
+        // --- User & Conversation Setup ---
+        function handleNameSubmit(e) {
+            e.preventDefault();
+            const userName = nameInput.value.trim();
+            const gender = document.querySelector('input[name="gender"]:checked')?.value;
+            
+            if (userName && gender) {
+                const userId = 'user-' + Date.now();
+                conversation = {
+                    id: userId,
+                    userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
+                    history: []
+                };
+                nameModal.classList.add('hidden');
+                addInitialMessage();
+                aiInput.focus();
+            } else {
+                alert("Veuillez remplir tous les champs.");
+            }
+        }
+        
+        function addInitialMessage() {
+            const starter = "Salut ! Qu'est-ce qui t'amène ?";
+            addMessage(starter, 'assistant');
+        }
+
+        // --- Local & Firebase Storage ---
+        function loadConversationFromLocalStorage() {
+            const saved = localStorage.getItem('chrice_conversation');
+            conversation = saved ? JSON.parse(saved) : {};
+        }
+
+        function saveConversationToLocalStorage() {
+            localStorage.setItem('chrice_conversation', JSON.stringify(conversation));
+        }
+        
+        async function syncConversationToFirebase() {
+            if (!conversation.id) return;
+            const convData = conversation;
+            const docRef = doc(db, 'conversations', convData.id);
+            try {
+                await setDoc(docRef, convData, { merge: true });
+            } catch (error) {
+                console.error("Firebase sync failed:", error);
+            }
+        }
+        
+        // --- UI Rendering ---
+        function renderChat() {
+             headerTitle.textContent = `Discussion avec ${conversation.userInfo.name}`;
+             chatWindow.innerHTML = '';
+             conversation.history.forEach(msg => appendMessage(msg.content, msg.role, false));
+        }
+
+        // --- Form & AI Interaction ---
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            if (isWaitingForResponse) return;
+            
+            const userPrompt = aiInput.value.trim();
+            if (!userPrompt) return;
+            
+            const conv = conversation;
+            const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
+            
+            if (conv.userInfo.mood === 'angry' && !isApology) {
+                conv.userInfo.angryCount = (conv.userInfo.angryCount || 0) + 1;
                 addMessage(userPrompt, 'user');
                 aiInput.value = '';
-                appendMessage('', 'loader');
-                isWaitingForResponse = true;
-
-                try {
-                    const response = await getAiResponse(userPrompt, conversationHistory, userInfo.name, userInfo.gender);
-                    removeLoader();
-                    if(response.includes("[SET_MOOD_ANGRY]")) {
-                        userInfo.mood = 'angry';
-                        userInfo.angryCount = 0;
-                        addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
-                    } else {
-                        addMessage(response, 'assistant');
-                    }
-                } catch (error) {
-                    removeLoader();
-                    addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
-                    console.error("API Error:", error);
-                } finally {
-                    isWaitingForResponse = false;
+                if (conv.userInfo.angryCount < 3) {
+                    return; // AI stays silent
                 }
             }
-
-            // --- Message Handling & Display ---
-            function addMessage(content, role) {
-                conversationHistory.push({ role, content });
-                appendMessage(content, role);
+            
+            if (isApology || (conv.userInfo.mood === 'angry' && conv.userInfo.angryCount >= 3)) {
+                conv.userInfo.mood = 'normal';
+                conv.userInfo.angryCount = 0;
             }
             
-            function appendMessage(text, type) {
-                const messageWrapper = document.createElement('div');
-                messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
-                const messageBubble = document.createElement('div');
-                messageBubble.className = `p-3 rounded-2xl max-w-[80%] ${type === 'user' ? 'user-message rounded-br-none' : 'ai-message rounded-bl-none'}`;
-                if (type === 'loader') {
-                    messageWrapper.id = 'loader-message';
-                    messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
+            addMessage(userPrompt, 'user');
+            aiInput.value = '';
+            appendMessage('', 'loader');
+            isWaitingForResponse = true;
+
+            try {
+                const response = await getAiResponse(userPrompt, conv.history, conv.userInfo.name, conv.userInfo.gender);
+                removeLoader();
+                if(response.includes("[SET_MOOD_ANGRY]")) {
+                    conv.userInfo.mood = 'angry';
+                    conv.userInfo.angryCount = 0;
+                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
                 } else {
-                    messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+                    addMessage(response, 'assistant');
                 }
-                messageWrapper.appendChild(messageBubble);
-                chatWindow.appendChild(messageWrapper);
-                scrollToBottom();
+            } catch (error) {
+                removeLoader();
+                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
+                console.error("API Error:", error);
+            } finally {
+                isWaitingForResponse = false;
+            }
+        }
+
+        // --- Message Handling & Display ---
+        function addMessage(content, role) {
+            conversation.history.push({ role, content });
+            appendMessage(content, role);
+            saveConversationToLocalStorage();
+            syncConversationToFirebase();
+        }
+        
+        function appendMessage(text, type, isNew = true) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            const messageBubble = document.createElement('div');
+            messageBubble.className = `p-3 rounded-2xl max-w-[80%] ${type === 'user' ? 'user-message rounded-br-none' : 'ai-message rounded-bl-none'}`;
+            if (type === 'loader') {
+                messageWrapper.id = 'loader-message';
+                messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
+            } else {
+                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+            }
+            messageWrapper.appendChild(messageBubble);
+            chatWindow.appendChild(messageWrapper);
+            if (isNew) scrollToBottom();
+        }
+        
+        function scrollToBottom() {
+            chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
+        }
+        
+        function removeLoader() {
+            const loader = document.getElementById('loader-message');
+            if (loader) loader.remove();
+        }
+
+        // --- Gemini API Call via Netlify Function ---
+        async function getAiResponse(prompt, history, currentUser, gender) {
+            const netlifyFunctionUrl = '/.netlify/functions/gemini-proxy';
+
+            const payload = {
+                prompt,
+                history,
+                currentUser,
+                gender
+            };
+
+            const response = await fetch(netlifyFunctionUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                 const errorText = await response.text();
+                 throw new Error(`Netlify function error: ${response.status} ${errorText}`);
             }
             
-            function scrollToBottom() {
-                chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
-            }
-            
-            function removeLoader() {
-                const loader = document.getElementById('loader-message');
-                if (loader) loader.remove();
-            }
-
-            // --- Gemini API Call via Netlify Function ---
-            async function getAiResponse(prompt, history, currentUser, gender) {
-                const netlifyFunctionUrl = '/.netlify/functions/gemini-proxy';
-
-                const payload = {
-                    prompt,
-                    history,
-                    currentUser,
-                    gender
-                };
-
-                const response = await fetch(netlifyFunctionUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                     const errorText = await response.text();
-                     throw new Error(`Netlify function error: ${response.status} ${errorText}`);
-                }
-                
-                const result = await response.json();
-                return result.text;
-            }
-            
-            init();
-        });
+            const result = await response.json();
+            return result.text;
+        }
+        
+        init();
     </script>
 </body>
 </html>
