@@ -46,6 +46,7 @@
     </style>
 </head>
 <body>
+    <!-- Name & Theme Prompt Modal -->
     <div id="name-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
         <div class="bg-[#1A1A1A] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-4 text-white">Nouvelle Discussion</h2>
@@ -70,6 +71,7 @@
     <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-30"></div>
 
     <div id="app-container" class="chat-container w-screen h-screen flex relative overflow-hidden">
+        <!-- Sidebar for conversations -->
         <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40" style="border-color: var(--border-color);">
             <header class="p-4 border-b flex justify-between items-center flex-shrink-0" style="border-color: var(--border-color);">
                 <h1 class="text-xl font-bold">Discussions</h1>
@@ -80,6 +82,7 @@
             <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
         </aside>
 
+        <!-- Main chat area -->
         <main id="main-chat" class="flex-1 flex flex-col h-full w-full">
             <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center p-8">
                  <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/121212/E0E0E0?text=C'">
@@ -112,16 +115,17 @@
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- IMPORTANT: Firebase Configuration ---
+        // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "VOTRE_API_KEY",
-            authDomain: "VOTRE_AUTH_DOMAIN",
-            projectId: "VOTRE_PROJECT_ID",
-            storageBucket: "VOTRE_STORAGE_BUCKET",
-            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
-            appId: "VOTRE_APP_ID"
+          apiKey: "AIzaSyD1Kzvy-wh6BoIOMTgX8FbbCmqOTdC47Bs",
+          authDomain: "chriceai.firebaseapp.com",
+          projectId: "chriceai",
+          storageBucket: "chriceai.appspot.com",
+          messagingSenderId: "687417014846",
+          appId: "1:687417014846:web:1ebb57b4001cd5ce94ef6f",
+          measurementId: "G-FSKD0Y4BPZ"
         };
 
         // Initialize Firebase
@@ -268,7 +272,6 @@
                 chatTitle.textContent = `Discussion avec ${conv.userName}`;
                 chatWindow.innerHTML = '';
                 conv.messages.forEach(msg => appendMessage(msg.content, msg.role, false));
-                scrollToBottom();
             });
         }
 
