@@ -43,11 +43,9 @@
         .loader-dot:nth-child(1) { animation-delay: -0.32s; }
         .loader-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-        /* Custom radio button for gender */
         #gender-select input[type="radio"] { display: none; }
         #gender-select label { border: 2px solid var(--border-color); }
         #gender-select input[type="radio"]:checked + span { color: var(--accent-color); }
-        #gender-select input[type="radio"]:checked + span + svg { display: block; }
     </style>
 </head>
 <body>
@@ -78,7 +76,6 @@
                     <select id="theme-select" class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg">
                         <option value="dark">Sombre (Défaut)</option>
                         <option value="light">Clair</option>
-                        <option value="love">Amour</option>
                     </select>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Commencer</button>
@@ -93,21 +90,9 @@
         <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40" style="border-color: var(--border-color);">
             <header class="p-4 border-b flex justify-between items-center flex-shrink-0" style="border-color: var(--border-color);">
                 <h1 class="text-xl font-bold">Discussions</h1>
-                <div class="flex items-center gap-2">
-                    <div id="theme-switcher" class="relative">
-                        <button id="theme-btn" class="p-2 rounded-full">
-                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
-                        </button>
-                        <div id="theme-menu" class="hidden absolute right-0 mt-2 w-40 bg-black rounded-lg shadow-xl border border-gray-700 z-10">
-                           <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-800" data-theme="dark">Sombre</a>
-                           <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-800" data-theme="light">Clair</a>
-                           <a href="#" class="block px-4 py-2 text-sm hover:bg-gray-800" data-theme="love">Amour</a>
-                        </div>
-                    </div>
-                    <button id="sidebar-new-chat-btn" class="p-2 rounded-full">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    </button>
-                </div>
+                <button id="sidebar-new-chat-btn" class="p-2 rounded-full">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                </button>
             </header>
             <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
         </aside>
@@ -115,7 +100,7 @@
         <!-- Main chat area -->
         <main id="main-chat" class="flex-1 flex flex-col h-full w-full">
             <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center p-8">
-                 <img id="welcome-avatar" src="/IMAGE/photodeprofil.png" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/121212/E0E0E0?text=C'">
+                 <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/121212/E0E0E0?text=C'">
                  <h2 class="text-2xl font-bold">Chrice</h2>
                  <p style="color: var(--text-light);" class="mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
                  <button id="welcome-new-chat-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">Créer une discussion</button>
@@ -168,6 +153,7 @@
         const nameModal = document.getElementById('name-modal');
         const nameForm = document.getElementById('name-form');
         const nameInput = document.getElementById('name-input');
+        const genderSelect = document.getElementById('gender-select');
         const themeSelect = document.getElementById('theme-select');
         const appContainer = document.getElementById('app-container');
         const sidebar = document.getElementById('sidebar');
@@ -182,8 +168,6 @@
         const chatWindow = document.getElementById('chat-window');
         const aiForm = document.getElementById('ai-form');
         const aiInput = document.getElementById('ai-input');
-        const themeBtn = document.getElementById('theme-btn');
-        const themeMenu = document.getElementById('theme-menu');
         
         // State
         let activeConversationId = null;
@@ -195,6 +179,7 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
+                    // For this model, conversations are identified by a unique ID per session, not a persistent user ID.
                     loadAndRenderConversations();
                 } else {
                     signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
@@ -211,16 +196,7 @@
             aiForm.addEventListener('submit', handleFormSubmit);
             menuToggleBtn.addEventListener('click', toggleSidebar);
             sidebarOverlay.addEventListener('click', toggleSidebar);
-            themeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                themeMenu.classList.toggle('hidden');
-            });
-            themeMenu.addEventListener('click', handleThemeChange);
-            document.addEventListener('click', (e) => {
-                if (!themeBtn.contains(e.target) && !themeMenu.contains(e.target)) {
-                    themeMenu.classList.add('hidden');
-                }
-            });
+            genderSelect.addEventListener('change', handleGenderChange);
         }
         
         // --- UI & Theme ---
@@ -237,18 +213,26 @@
             if (userName && gender) {
                 nameModal.classList.add('hidden');
                 nameInput.value = '';
-                document.querySelector('input[name="gender"]:checked').checked = false;
+                const checkedRadio = document.querySelector('input[name="gender"]:checked');
+                if(checkedRadio) checkedRadio.checked = false;
                 await createNewConversation(userName, gender, theme);
             } else {
                 alert("Veuillez entrer votre prénom et sélectionner votre sexe.");
             }
         }
-
-        function handleThemeChange(e) {
-            e.preventDefault();
-            if (e.target.dataset.theme) {
-                applyTheme(e.target.dataset.theme);
-                localStorage.setItem('chrice_theme', e.target.dataset.theme);
+        
+        function handleGenderChange() {
+            const gender = document.querySelector('input[name="gender"]:checked')?.value;
+            const loveOption = themeSelect.querySelector('option[value="love"]');
+            if (gender === 'femme') {
+                if (!loveOption) {
+                    const option = new Option('Amour', 'love');
+                    themeSelect.add(option);
+                }
+            } else {
+                if (loveOption) {
+                    themeSelect.remove(loveOption.index);
+                }
             }
         }
 
@@ -257,11 +241,20 @@
         }
 
         // --- Firestore & Conversation Logic ---
+        function getLocalUserId() {
+            let userId = localStorage.getItem('chrice_local_user_id');
+            if (!userId) {
+                userId = 'local-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('chrice_local_user_id', userId);
+            }
+            return userId;
+        }
+
         function loadAndRenderConversations() {
-            if (!currentUser) return;
+            const localUserId = getLocalUserId();
             if (conversationsUnsubscribe) conversationsUnsubscribe();
 
-            const q = query(collection(db, 'users', currentUser.uid, 'conversations'), orderBy('lastUpdated', 'desc'));
+            const q = query(collection(db, 'public_chats', localUserId, 'conversations'), orderBy('lastUpdated', 'desc'));
             
             conversationsUnsubscribe = onSnapshot(q, (snapshot) => {
                 const conversations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -290,14 +283,15 @@
         }
 
         async function createNewConversation(userName, gender, theme) {
-            if (!currentUser) return;
+            const localUserId = getLocalUserId();
             const starter = [ "Tu penses à quoi là ? 😉", "Raconte-moi un truc...", "Hey, ça te dit de parler de projets un peu fous ?" ][Math.floor(Math.random() * 3)];
             
-            const newConvRef = await addDoc(collection(db, 'users', currentUser.uid, 'conversations'), {
+            const newConvRef = await addDoc(collection(db, 'public_chats', localUserId, 'conversations'), {
                 userName,
                 gender,
                 theme,
                 mood: 'normal',
+                deviceInfo: navigator.userAgent,
                 createdAt: serverTimestamp(),
                 lastUpdated: serverTimestamp(),
                 messages: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
@@ -316,7 +310,7 @@
             };
             activeConversationId = id;
             
-            const convDoc = await getDoc(doc(db, 'users', currentUser.uid, 'conversations', id));
+            const convDoc = await getDoc(doc(db, 'public_chats', getLocalUserId(), 'conversations', id));
             if(convDoc.exists()) {
                  applyTheme(convDoc.data().theme || 'dark');
                  renderChatWindow(id);
@@ -328,16 +322,15 @@
         }
         
         function renderChatWindow(id) {
-            if (!currentUser) return;
             welcomeScreen.classList.add('hidden');
             chatArea.classList.remove('hidden');
 
-            onSnapshot(doc(db, 'users', currentUser.uid, 'conversations', id), (doc) => {
+            onSnapshot(doc(db, 'public_chats', getLocalUserId(), 'conversations', id), (doc) => {
                 if (!doc.exists() || activeConversationId !== id) return;
                 const conv = doc.data();
                 chatTitle.textContent = `Discussion avec ${conv.userName}`;
                 chatWindow.innerHTML = '';
-                conv.messages.forEach(msg => appendMessage(msg.content, msg.role, false));
+                conv.messages.forEach(msg => appendMessage(msg.content, msg.role));
                 scrollToBottom();
             });
         }
@@ -345,9 +338,10 @@
         async function handleFormSubmit(e) {
             e.preventDefault();
             const userPrompt = aiInput.value.trim();
-            if (!userPrompt || !activeConversationId || !currentUser) return;
+            if (!userPrompt || !activeConversationId) return;
             
-            const convRef = doc(db, 'users', currentUser.uid, 'conversations', activeConversationId);
+            const localUserId = getLocalUserId();
+            const convRef = doc(db, 'public_chats', localUserId, 'conversations', activeConversationId);
             const convDoc = (await getDoc(convRef)).data();
             
             const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
@@ -362,7 +356,7 @@
 
             addMessage(userPrompt, 'user');
             aiInput.value = '';
-            appendMessage('', 'loader', true);
+            appendMessage('', 'loader');
 
             try {
                 const response = await getAiResponse(userPrompt, convDoc.messages, convDoc.userName, convDoc.gender);
@@ -382,15 +376,16 @@
         
         // --- Message Handling ---
         async function addMessage(content, role) {
-            if (!activeConversationId || !currentUser) return;
-            const convRef = doc(db, 'users', currentUser.uid, 'conversations', activeConversationId);
+            if (!activeConversationId) return;
+            const localUserId = getLocalUserId();
+            const convRef = doc(db, 'public_chats', localUserId, 'conversations', activeConversationId);
             await updateDoc(convRef, {
                 messages: arrayUnion({ role, content, timestamp: Date.now() }),
                 lastUpdated: serverTimestamp()
             });
         }
         
-        function appendMessage(text, type, isNew) {
+        function appendMessage(text, type) {
             const messageWrapper = document.createElement('div');
             messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
             const messageBubble = document.createElement('div');
@@ -403,7 +398,7 @@
             }
             messageWrapper.appendChild(messageBubble);
             chatWindow.appendChild(messageWrapper);
-            if (isNew) scrollToBottom();
+            scrollToBottom();
         }
         
         function scrollToBottom() {
