@@ -1,0 +1,7 @@
+[build]
+  # Dossier où se trouvent les fonctions
+  functions = "netlify/functions"
+
+[functions]
+  # Assure que les outils nécessaires (comme @google/generative-ai) sont bien inclus
+  node_bundler = "esbuild"
