@@ -187,6 +187,7 @@
                 selectConversation(Object.keys(conversations).sort((a,b) => b - a)[0]);
             }
             setupEventListeners();
+            setAppHeight();
         }
         
         function setupEventListeners() {
@@ -198,9 +199,14 @@
             sidebarOverlay.addEventListener('click', toggleSidebar);
             genderSelect.addEventListener('change', handleGenderChange);
             imageUploadInput.addEventListener('change', handleImageUpload);
+            window.addEventListener('resize', setAppHeight);
         }
         
-        // --- UI & Theme ---
+        // --- UI, Theme & Layout ---
+        function setAppHeight() {
+            appContainer.style.height = `${window.innerHeight}px`;
+        }
+
         function toggleSidebar() {
             sidebar.classList.toggle('-translate-x-full');
             sidebarOverlay.classList.toggle('hidden');
