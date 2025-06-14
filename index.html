@@ -76,10 +76,10 @@
             <div id="welcome-screen" class="flex-1 flex-col items-center justify-center h-full text-center p-8 hidden">
                  <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/1e1f20/FFFFFF?text=C'">
                  <h2 class="text-2xl font-bold">Chrice</h2>
-                 <p class="text-gray-400 mb-6">Sélectionnez ou créez une discussion pour commencer.</p>
+                 <p class="text-gray-400 mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
                  <button id="welcome-new-chat-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">Nouvelle Discussion</button>
             </div>
-
+            
             <div id="chat-area" class="hidden flex-1 flex-col">
                 <header class="p-4 flex items-center flex-shrink-0 border-b border-gray-800">
                     <button id="menu-toggle-btn" class="md:hidden p-2 rounded-full mr-2">
@@ -209,15 +209,9 @@
                 userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
                 history: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
             };
-            addMessageToLocalStorage(newId, starter, 'assistant');
+            saveConversationsToLocalStorage();
+            syncConversationToFirebase(newId);
             selectConversation(newId);
-        }
-
-        function addMessageToLocalStorage(convId, content, role) {
-             if (!conversations[convId]) return;
-             conversations[convId].history.push({ role, content, timestamp: Date.now() });
-             saveConversationsToLocalStorage();
-             syncConversationToFirebase(convId);
         }
 
         // --- Local & Firebase Storage ---
@@ -256,7 +250,7 @@
                 const item = document.createElement('div');
                 item.className = `conversation-item p-4 cursor-pointer border-b border-gray-800 ${id === activeConversationId ? 'active' : ''}`;
                 item.dataset.id = id;
-                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage}</p>`;
+                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage.includes('<img') ? '[Photo]' : lastMessage}</p>`;
                 item.addEventListener('click', () => selectConversation(id));
                 conversationList.appendChild(item);
             });
@@ -308,7 +302,7 @@
             
             if (conv.userInfo.mood === 'angry' && !isApology) {
                 conv.userInfo.angryCount = (conv.userInfo.angryCount || 0) + 1;
-                addMessage(userPrompt, 'user', activeConversationId);
+                addMessage(userPrompt, 'user');
                 aiInput.value = '';
                 if (conv.userInfo.angryCount < 3) {
                     return; // AI stays silent
@@ -320,7 +314,7 @@
                 conv.userInfo.angryCount = 0;
             }
             
-            addMessage(userPrompt, 'user', activeConversationId);
+            addMessage(userPrompt, 'user');
             aiInput.value = '';
             appendMessage('', 'loader');
             isWaitingForResponse = true;
@@ -331,30 +325,30 @@
                 if(response.includes("[SET_MOOD_ANGRY]")) {
                     conv.userInfo.mood = 'angry';
                     conv.userInfo.angryCount = 0;
-                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant', activeConversationId);
+                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
                 } else {
-                    addMessage(response, 'assistant', activeConversationId);
+                    addMessage(response, 'assistant');
                 }
             } catch (error) {
                 removeLoader();
-                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant', activeConversationId);
+                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
                 console.error("API Error:", error);
             } finally {
                 isWaitingForResponse = false;
             }
         }
-
+        
         // --- Message Handling & Display ---
-        function addMessage(content, role, convId) {
-            if (!convId) return;
-            const conv = conversations[convId];
+        function addMessage(content, role) {
+            if (!activeConversationId) return;
+            const conv = conversations[activeConversationId];
             conv.history.push({ role, content, timestamp: Date.now() });
             conv.lastUpdated = Date.now();
-            if (convId === activeConversationId) {
+            if (activeConversationId) {
                 appendMessage(content, role);
             }
             saveConversationsToLocalStorage();
-            syncConversationToFirebase(convId);
+            syncConversationToFirebase(activeConversationId);
             renderConversationList();
         }
         
@@ -367,7 +361,7 @@
                 messageWrapper.id = 'loader-message';
                 messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
             } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
             }
             messageWrapper.appendChild(messageBubble);
             chatWindow.appendChild(messageWrapper);
