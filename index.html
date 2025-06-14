@@ -191,14 +191,18 @@
         let conversationsUnsubscribe = null;
 
         // --- Initialization & Auth ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                loadAndRenderConversations();
-            } else {
-                signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
-            }
-        });
+        function init() {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    loadAndRenderConversations();
+                } else {
+                    signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
+                }
+            });
+            applyTheme(localStorage.getItem('chrice_theme') || 'dark');
+            setupEventListeners();
+        }
         
         function setupEventListeners() {
             nameForm.addEventListener('submit', handleNameSubmit);
@@ -332,15 +336,9 @@
                 if (!doc.exists() || activeConversationId !== id) return;
                 const conv = doc.data();
                 chatTitle.textContent = `Discussion avec ${conv.userName}`;
-                const oldScrollTop = chatWindow.scrollTop;
-                const oldScrollHeight = chatWindow.scrollHeight;
-
                 chatWindow.innerHTML = '';
                 conv.messages.forEach(msg => appendMessage(msg.content, msg.role, false));
-                
-                // Restore scroll position to avoid jumping
-                const newScrollHeight = chatWindow.scrollHeight;
-                chatWindow.scrollTop = oldScrollTop + (newScrollHeight - oldScrollHeight);
+                scrollToBottom();
             });
         }
 
@@ -440,11 +438,6 @@
         }
         
         // --- Main Initialization Call ---
-        function init() {
-            applyTheme(localStorage.getItem('chrice_theme') || 'dark');
-            setupEventListeners();
-        }
-        
         init();
     </script>
 </body>
