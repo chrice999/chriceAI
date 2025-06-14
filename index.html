@@ -46,7 +46,6 @@
     </style>
 </head>
 <body>
-    <!-- Name & Theme Prompt Modal -->
     <div id="name-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
         <div class="bg-[#1A1A1A] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
             <h2 class="text-2xl font-bold mb-4 text-white">Nouvelle Discussion</h2>
@@ -71,7 +70,6 @@
     <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-30"></div>
 
     <div id="app-container" class="chat-container w-screen h-screen flex relative overflow-hidden">
-        <!-- Sidebar for conversations -->
         <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40" style="border-color: var(--border-color);">
             <header class="p-4 border-b flex justify-between items-center flex-shrink-0" style="border-color: var(--border-color);">
                 <h1 class="text-xl font-bold">Discussions</h1>
@@ -82,7 +80,6 @@
             <div id="conversation-list" class="flex-1 overflow-y-auto"></div>
         </aside>
 
-        <!-- Main chat area -->
         <main id="main-chat" class="flex-1 flex flex-col h-full w-full">
             <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-center p-8">
                  <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/121212/E0E0E0?text=C'">
@@ -119,13 +116,12 @@
 
         // --- IMPORTANT: Firebase Configuration ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCvQ2wyZUjQR7Cj1ELL64z4pgIwrOjfLvo",
-            authDomain: "chrice-ia-clone.firebaseapp.com",
-            projectId: "chrice-ia-clone",
-            storageBucket: "chrice-ia-clone.appspot.com",
-            messagingSenderId: "516911134695",
-            appId: "1:516911134695:web:5a8698603606fab2982f42",
-            measurementId: "G-QJM1SQJNPD"
+            apiKey: "VOTRE_API_KEY",
+            authDomain: "VOTRE_AUTH_DOMAIN",
+            projectId: "VOTRE_PROJECT_ID",
+            storageBucket: "VOTRE_STORAGE_BUCKET",
+            messagingSenderId: "VOTRE_MESSAGING_SENDER_ID",
+            appId: "VOTRE_APP_ID"
         };
 
         // Initialize Firebase
@@ -174,7 +170,7 @@
             sidebarOverlay.addEventListener('click', toggleSidebar);
         }
         setupEventListeners();
-
+        
         // --- UI & Theme ---
         function toggleSidebar() {
             sidebar.classList.toggle('-translate-x-full');
@@ -231,7 +227,7 @@
 
         async function createNewConversation(userName, theme) {
             if (!currentUser) return;
-            const starter = [ "Tu penses à quoi là ? �", "Raconte-moi un truc...", "Hey, ça te dit de parler de projets un peu fous ?" ][Math.floor(Math.random() * 3)];
+            const starter = [ "Tu penses à quoi là ? 😉", "Raconte-moi un truc...", "Hey, ça te dit de parler de projets un peu fous ?" ][Math.floor(Math.random() * 3)];
             
             const newConvRef = await addDoc(collection(db, 'users', currentUser.uid, 'conversations'), {
                 userName,
@@ -318,7 +314,6 @@
         async function addMessage(content, role) {
             if (!activeConversationId || !currentUser) return;
             const convRef = doc(db, 'users', currentUser.uid, 'conversations', activeConversationId);
-            const { arrayUnion } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
             await updateDoc(convRef, {
                 messages: arrayUnion({ role, content, timestamp: Date.now() }),
                 lastUpdated: serverTimestamp()
@@ -375,4 +370,3 @@
     </script>
 </body>
 </html>
-�
