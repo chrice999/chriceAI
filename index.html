@@ -26,7 +26,7 @@
             --text-main: #FAD7E3; --text-light: #E1BBD0; --border-color: #6B447A;
             --accent-color: #E94057;
         }
-        body { font-family: 'Inter', sans-serif; background-color: #000000; }
+        body { font-family: 'Inter', sans-serif; background-color: #000000; overflow: hidden; }
         .chat-container { background-color: var(--bg-main); color: var(--text-main); }
         .sidebar { background-color: var(--bg-sidebar); }
         .chat-window { background-color: var(--bg-chat); }
@@ -118,11 +118,16 @@
                 <div id="chat-window" class="flex-1 p-4 overflow-y-auto"></div>
                 <footer class="p-4">
                     <form id="ai-form" class="flex items-center gap-3">
+                         <label for="image-upload" class="p-2 rounded-full cursor-pointer hover:bg-gray-700">
+                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                         </label>
+                         <input type="file" id="image-upload" class="hidden" accept="image/*">
                         <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
                             <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
                     </form>
+                    <p class="text-xs text-center mt-2" style="color: var(--text-light);">Les discussions sont privées. Aucune notification n'est envoyée.</p>
                 </footer>
             </div>
         </main>
@@ -131,8 +136,7 @@
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, serverTimestamp, query, orderBy, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, serverTimestamp, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -147,7 +151,6 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
         // DOM Elements
@@ -170,23 +173,19 @@
         const chatWindow = document.getElementById('chat-window');
         const aiForm = document.getElementById('ai-form');
         const aiInput = document.getElementById('ai-input');
+        const imageUploadInput = document.getElementById('image-upload');
         
         // State
+        let conversations = {};
         let activeConversationId = null;
-        let currentUser = null;
-        let conversationsUnsubscribe = null;
 
-        // --- Initialization & Auth ---
+        // --- Initialization ---
         function init() {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    loadAndRenderConversations();
-                } else {
-                    signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed:", error));
-                }
-            });
-            applyTheme(localStorage.getItem('chrice_theme') || 'dark');
+            loadConversationsFromLocalStorage();
+            renderConversationList();
+            if (Object.keys(conversations).length > 0) {
+                selectConversation(Object.keys(conversations).sort((a,b) => b - a)[0]);
+            }
             setupEventListeners();
         }
         
@@ -198,6 +197,7 @@
             menuToggleBtn.addEventListener('click', toggleSidebar);
             sidebarOverlay.addEventListener('click', toggleSidebar);
             genderSelect.addEventListener('change', handleGenderChange);
+            imageUploadInput.addEventListener('change', handleImageUpload);
         }
         
         // --- UI & Theme ---
@@ -259,101 +259,107 @@
             appContainer.className = `chat-container w-screen h-screen flex relative overflow-hidden theme-${theme}`;
         }
 
-        // --- Firestore & Conversation Logic ---
-        function getLocalUserId() {
-            let userId = localStorage.getItem('chrice_local_user_id');
-            if (!userId) {
-                userId = 'local-' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('chrice_local_user_id', userId);
-            }
-            return userId;
+        // --- Local & Firebase Conversation Logic ---
+        function loadConversationsFromLocalStorage() {
+            const saved = localStorage.getItem('chrice_conversations');
+            conversations = saved ? JSON.parse(saved) : {};
         }
 
-        function loadAndRenderConversations() {
-            const localUserId = getLocalUserId();
-            if (conversationsUnsubscribe) conversationsUnsubscribe();
-
-            const q = query(collection(db, 'public_chats', localUserId, 'conversations'), orderBy('lastUpdated', 'desc'));
-            
-            conversationsUnsubscribe = onSnapshot(q, (snapshot) => {
-                const conversations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderConversationList(conversations);
-                if (!activeConversationId && conversations.length > 0) {
-                    selectConversation(conversations[0].id);
-                } else if (snapshot.empty) {
-                     welcomeScreen.classList.remove('hidden');
-                     chatArea.classList.add('hidden');
-                }
-            }, (error) => {
-                console.error("Error with snapshot listener: ", error);
-            });
+        function saveConversationsToLocalStorage() {
+            localStorage.setItem('chrice_conversations', JSON.stringify(conversations));
         }
-
-        function renderConversationList(conversations) {
+        
+        function renderConversationList() {
+            const sortedIds = Object.keys(conversations).sort((a,b) => conversations[b].lastUpdated - conversations[a].lastUpdated);
             conversationList.innerHTML = '';
-            conversations.forEach(conv => {
+            sortedIds.forEach(id => {
+                const conv = conversations[id];
                 const lastMessage = conv.messages?.[conv.messages.length - 1]?.content || '...';
                 const item = document.createElement('div');
-                item.className = `conversation-item p-4 cursor-pointer border-b ${conv.id === activeConversationId ? 'active' : ''}`;
+                item.className = `conversation-item p-4 cursor-pointer border-b ${id === activeConversationId ? 'active' : ''}`;
                 item.style.borderColor = 'var(--border-color)';
-                item.dataset.id = conv.id;
+                item.dataset.id = id;
                 item.innerHTML = `<h3 class="font-semibold truncate">${conv.userName}</h3><p class="text-xs truncate" style="color:var(--text-light);">${lastMessage}</p>`;
-                item.addEventListener('click', () => selectConversation(conv.id));
+                item.addEventListener('click', () => selectConversation(id));
                 conversationList.appendChild(item);
             });
         }
 
         async function createNewConversation(userName, gender, theme) {
-            const localUserId = getLocalUserId();
+            const newId = Date.now().toString();
             const starter = [ "Tu penses à quoi là ? 😉", "Raconte-moi un truc...", "Hey, ça te dit de parler de projets un peu fous ?" ][Math.floor(Math.random() * 3)];
             
-            const newConvRef = await addDoc(collection(db, 'public_chats', localUserId, 'conversations'), {
+            conversations[newId] = {
+                id: newId,
                 userName,
                 gender,
                 theme,
                 mood: 'normal',
                 deviceInfo: navigator.userAgent,
-                createdAt: serverTimestamp(),
-                lastUpdated: serverTimestamp(),
+                createdAt: Date.now(),
+                lastUpdated: Date.now(),
                 messages: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
-            });
+            };
             
-            selectConversation(newConvRef.id);
+            saveConversationsToLocalStorage();
+            await syncConversationToFirebase(newId);
+            
+            selectConversation(newId);
             if (window.innerWidth < 768) toggleSidebar();
         }
 
         async function selectConversation(id) {
-            if (activeConversationId === id) {
-                if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
-                   toggleSidebar();
-                }
-                return;
-            };
             activeConversationId = id;
-            
-            const convDoc = await getDoc(doc(db, 'public_chats', getLocalUserId(), 'conversations', id));
-            if(convDoc.exists()) {
-                 applyTheme(convDoc.data().theme || 'dark');
+            const conv = conversations[id];
+            if(conv) {
+                 applyTheme(conv.theme || 'dark');
                  renderChatWindow(id);
             }
-             loadAndRenderConversations();
+            renderConversationList();
             if (window.innerWidth < 768 && !sidebar.classList.contains('-translate-x-full')) {
                toggleSidebar();
             }
         }
         
         function renderChatWindow(id) {
+            if (!id || !conversations[id]) {
+                welcomeScreen.classList.remove('hidden');
+                chatArea.classList.add('hidden');
+                return;
+            }
             welcomeScreen.classList.add('hidden');
             chatArea.classList.remove('hidden');
+            const conv = conversations[id];
+            chatTitle.textContent = `Discussion avec ${conv.userName}`;
+            chatWindow.innerHTML = '';
+            conv.messages.forEach(msg => appendMessage(msg.content, msg.role));
+            scrollToBottom();
+        }
+        
+        function handleImageUpload(event) {
+            if (!activeConversationId) return;
+            const file = event.target.files[0];
+            if (!file) return;
 
-            onSnapshot(doc(db, 'public_chats', getLocalUserId(), 'conversations', id), (doc) => {
-                if (!doc.exists() || activeConversationId !== id) return;
-                const conv = doc.data();
-                chatTitle.textContent = `Discussion avec ${conv.userName}`;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                const content = `<img src="${imageUrl}" class="rounded-lg max-w-xs" alt="Image envoyée">`;
+                addMessage(content, 'user');
+                addMessage('', 'loader');
                 
-                chatWindow.innerHTML = '';
-                conv.messages.forEach(msg => appendMessage(msg.content, msg.role));
-            });
+                getAiResponse('[USER_SENT_A_PHOTO]', conversations[activeConversationId].messages, conversations[activeConversationId].userName, conversations[activeConversationId].gender)
+                    .then(response => {
+                        removeLoader();
+                        addMessage(response, 'assistant');
+                    }).catch(error => {
+                        removeLoader();
+                        addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
+                        console.error("API Error:", error);
+                    });
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Reset input
         }
 
         async function handleFormSubmit(e) {
@@ -361,29 +367,26 @@
             const userPrompt = aiInput.value.trim();
             if (!userPrompt || !activeConversationId) return;
             
-            const localUserId = getLocalUserId();
-            const convRef = doc(db, 'public_chats', localUserId, 'conversations', activeConversationId);
-            const convDoc = (await getDoc(convRef)).data();
-            
+            const conv = conversations[activeConversationId];
             const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
             
-            if (convDoc.mood === 'angry' && !isApology) {
+            if (conv.mood === 'angry' && !isApology) {
                 addMessage(userPrompt, 'user');
                 aiInput.value = '';
                 return;
             }
 
-            if (isApology) await updateDoc(convRef, { mood: 'normal' });
+            if (isApology) conv.mood = 'normal';
 
             addMessage(userPrompt, 'user');
             aiInput.value = '';
             appendMessage('', 'loader');
 
             try {
-                const response = await getAiResponse(userPrompt, convDoc.messages, convDoc.userName, convDoc.gender);
+                const response = await getAiResponse(userPrompt, conv.messages, conv.userName, conv.gender);
                 removeLoader();
                 if(response.includes("[SET_MOOD_ANGRY]")) {
-                    await updateDoc(convRef, { mood: 'angry' });
+                    conv.mood = 'angry';
                     addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
                 } else {
                     addMessage(response, 'assistant');
@@ -395,17 +398,31 @@
             }
         }
         
-        // --- Message Handling ---
+        // --- Message & Sync ---
         async function addMessage(content, role) {
             if (!activeConversationId) return;
-            const localUserId = getLocalUserId();
-            const convRef = doc(db, 'public_chats', localUserId, 'conversations', activeConversationId);
-            await updateDoc(convRef, {
-                messages: arrayUnion({ role, content, timestamp: Date.now() }),
-                lastUpdated: serverTimestamp()
-            });
+            const conv = conversations[activeConversationId];
+            conv.messages.push({ role, content, timestamp: Date.now() });
+            conv.lastUpdated = Date.now();
+            saveConversationsToLocalStorage();
+            appendMessage(content, role);
+            await syncConversationToFirebase(activeConversationId);
+            renderConversationList();
         }
         
+        async function syncConversationToFirebase(convId) {
+            if (!convId || !conversations[convId]) return;
+            const convData = conversations[convId];
+            const docId = `${convData.userName.replace(/\s+/g, '_')}-${convData.id}`;
+            const convRef = doc(db, 'conversations', docId); 
+            
+            try {
+                await setDoc(convRef, convData, { merge: true });
+            } catch (error) {
+                console.error("Firebase sync failed:", error);
+            }
+        }
+
         function appendMessage(text, type) {
             const messageWrapper = document.createElement('div');
             messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
@@ -415,7 +432,7 @@
                 messageWrapper.id = 'loader-message';
                 messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
             } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</p>`;
+                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
             }
             messageWrapper.appendChild(messageBubble);
             chatWindow.appendChild(messageWrapper);
