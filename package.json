@@ -1,7 +1,14 @@
 {
-  "name": "chrice-app",
+  "name": "chrice-ai-project",
   "version": "1.0.0",
+  "description": "Chatbot Chrice AI avec backend sécurisé sur Netlify.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "author": "Chrice",
+  "license": "ISC",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "@google/generative-ai": "^0.11.3"
   }
 }
