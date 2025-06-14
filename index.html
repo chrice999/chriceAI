@@ -295,6 +295,7 @@
                 gender,
                 theme,
                 mood: 'normal',
+                angryMessageCount: 0,
                 deviceInfo: navigator.userAgent,
                 createdAt: Date.now(),
                 lastUpdated: Date.now(),
@@ -333,7 +334,6 @@
             chatTitle.textContent = `Discussion avec ${conv.userName}`;
             chatWindow.innerHTML = '';
             conv.messages.forEach(msg => appendMessage(msg.content, msg.role));
-            scrollToBottom();
         }
         
         function handleImageUpload(event) {
@@ -371,12 +371,20 @@
             const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
             
             if (conv.mood === 'angry' && !isApology) {
+                conv.angryMessageCount = (conv.angryMessageCount || 0) + 1;
                 addMessage(userPrompt, 'user');
                 aiInput.value = '';
-                return;
+                if (conv.angryMessageCount < 3) {
+                    saveConversationsToLocalStorage();
+                    await syncConversationToFirebase(activeConversationId);
+                    return; // AI stays silent
+                }
             }
 
-            if (isApology) conv.mood = 'normal';
+            if (isApology || (conv.mood === 'angry' && conv.angryMessageCount >= 3)) {
+                conv.mood = 'normal';
+                conv.angryMessageCount = 0;
+            }
 
             addMessage(userPrompt, 'user');
             aiInput.value = '';
@@ -387,6 +395,7 @@
                 removeLoader();
                 if(response.includes("[SET_MOOD_ANGRY]")) {
                     conv.mood = 'angry';
+                    conv.angryMessageCount = 0;
                     addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
                 } else {
                     addMessage(response, 'assistant');
