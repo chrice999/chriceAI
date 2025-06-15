@@ -27,7 +27,25 @@
         .sidebar { background-color: #1A1A1A; }
         .conversation-item.active { background-color: #262626; }
         .conversation-item:hover { background-color: #222222; }
-    </style>
+    
+#chat-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#chat-window {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 1rem;
+}
+
+footer {
+  background-color: #1e1f20;
+}
+
+</style>
 </head>
 <body class="text-gray-200">
     <!-- Name & Gender Prompt Modal -->
@@ -94,7 +112,7 @@
 
                 <div id="chat-window" class="flex-1 p-4 overflow-y-auto"></div>
 
-                <footer class="p-4 flex-shrink-0" style="position:sticky; bottom:0; background-color:#1e1f20; z-index:10;">
+                <footer class="p-4 flex-shrink-0">
                     <form id="ai-form" class="flex items-center gap-3">
                         <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
