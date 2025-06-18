@@ -147,7 +147,7 @@ footer {
         const nameModal = document.getElementById('name-modal');
         const nameForm = document.getElementById('name-form');
         const nameInput = document.getElementById('name-input');
-        const nameError = document.getElementById('name-error'); // <-- NOUVEAU
+        const nameError = document.getElementById('name-error');
         const conversationList = document.getElementById('conversation-list');
         const headerTitle = document.getElementById('header-title');
         const chatWindow = document.getElementById('chat-window');
@@ -181,11 +181,11 @@ footer {
         function setupEventListeners() {
             nameForm.addEventListener('submit', handleNameSubmit);
             sidebarNewChatBtn.addEventListener('click', () => {
-                nameError.classList.add('hidden'); // <-- MODIFIÉ : Cacher l'erreur en ouvrant
+                nameError.classList.add('hidden');
                 nameModal.classList.remove('hidden');
             });
             welcomeNewChatBtn.addEventListener('click', () => {
-                nameError.classList.add('hidden'); // <-- MODIFIÉ : Cacher l'erreur en ouvrant
+                nameError.classList.add('hidden');
                 nameModal.classList.remove('hidden');
             });
             aiForm.addEventListener('submit', handleFormSubmit);
@@ -199,7 +199,6 @@ footer {
         }
 
         // --- User & Conversation Setup ---
-        // ----- FONCTION MODIFIÉE -----
         function handleNameSubmit(e) {
             e.preventDefault();
             let userName = nameInput.value.trim();
@@ -209,22 +208,19 @@ footer {
                 gender = 'femme';
             }
 
-            // Vérification que le nom n'est pas vide
             if (!userName) {
                 nameError.textContent = "Veuillez entrer votre prénom pour continuer.";
                 nameError.classList.remove('hidden');
-                return; // On arrête la fonction ici
+                return;
             }
             
-            // Vérification que le genre est sélectionné
             if (!gender) {
                 nameError.textContent = "Veuillez choisir un genre.";
                 nameError.classList.remove('hidden');
-                return; // On arrête la fonction ici
+                return;
             }
             
-            // Si tout est bon, on continue
-            nameError.classList.add('hidden'); // Cacher le message d'erreur
+            nameError.classList.add('hidden');
             createNewConversation(userName, gender);
             nameModal.classList.add('hidden');
             nameInput.value = '';
