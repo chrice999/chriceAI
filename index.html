@@ -3,437 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chrice - Conversation</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Offre Gemini Pro + 2 To Stockage Cloud</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #131314; overflow: hidden; }
-        .user-message { background: linear-gradient(to right, #1a64d9, #1f77f2); }
-        .ai-message { background-color: #1e1f20; }
-        .chat-input { background-color: #1e1f20; border: 1px solid #3c4043; }
-        .chat-input:focus { outline: none; border-color: #8ab4f8; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e1f20; }
-        ::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 4px; }
-        .loader-dot { height: 8px; width: 8px; border-radius: 50%; background-color: #8ab4f8; animation: bounce 1.4s infinite ease-in-out both; }
-        .loader-dot:nth-child(1) { animation-delay: -0.32s; }
-        .loader-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-        #gender-select input[type="radio"] { display: none; }
-        #gender-select label { border: 2px solid #3c4043; }
-        #gender-select input[type="radio"]:checked + span { color: #8ab4f8; }
-        .sidebar { background-color: #1A1A1A; }
-        .conversation-item.active { background-color: #262626; }
-        .conversation-item:hover { background-color: #222222; }
-    
-#chat-area {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-#chat-window {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 1rem;
-}
-
-footer {
-  background-color: #1e1f20;
-}
-
-</style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background-color: #f7f8fc; background-image: radial-gradient(circle at 1% 1%, #e2e8f0 0%, transparent 50%), radial-gradient(circle at 99% 99%, #dde6f9 0%, transparent 40%); }
+        .promo-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .promo-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        #chat-bubble { position: fixed; bottom: 2rem; right: 2rem; background-color: #1a73e8; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; transition: transform 0.2s ease-in-out; }
+        #chat-bubble:hover { transform: scale(1.1); }
+        #chat-window { position: fixed; bottom: 6.5rem; right: 2rem; width: 350px; max-width: 90vw; height: 500px; max-height: 70vh; background-color: white; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; z-index: 1000; transform: scale(0.95) translateY(10px); opacity: 0; pointer-events: none; transition: transform 0.3s ease, opacity 0.3s ease; }
+        #chat-window.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
+        .chat-message { padding: 8px 12px; border-radius: 18px; margin-bottom: 8px; max-width: 80%; line-height: 1.4; }
+        .agent-message { background-color: #f1f3f4; color: #202124; align-self: flex-start; }
+        .user-message { background-color: #d2e3fc; color: #0d47a1; align-self: flex-end; }
+        .typing-indicator span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #909090; animation: typing 1s infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
+    </style>
 </head>
-<body class="text-gray-200">
-    <div id="name-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
-        <div class="bg-[#1e1f20] p-8 rounded-lg shadow-xl text-center w-full max-w-sm">
-            <h2 class="text-2xl font-bold mb-4 text-white">Qui es-tu ?</h2>
-            <form id="name-form">
-                <div class="mb-4">
-                    <input id="name-input" type="text" placeholder="Entre ton prénom..." class="chat-input w-full text-center rounded-lg py-3 px-5 text-lg" required>
+<body class="gradient-bg">
+
+    <!-- Le contenu de votre page reste identique -->
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <!-- ... tout votre contenu HTML (header, sections, footer) va ici ... -->
+        <!-- En-tête -->
+        <header class="text-center py-8">
+             <div class="flex justify-center items-center space-x-4 md:space-x-8 mb-8">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Google_Gemini_logo.svg/1024px-Google_Gemini_logo.svg.png" alt="Logo Gemini" class="h-10 md:h-12" onerror="this.style.display='none'">
+                <span class="text-gray-300 text-2xl">+</span>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Google_Cloud_logo.svg/1280px-Google_Cloud_logo.svg.png" alt="Logo Google Cloud" class="h-8 md:h-10" onerror="this.style.display='none'">
+                <span class="text-gray-300 text-2xl">+</span>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gmail_icon_%282020%29.svg/1280px-Gmail_icon_%282020%29.svg.png" alt="Logo Gmail" class="h-8 md:h-10" onerror="this.style.display='none'">
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black text-gray-800 tracking-tight">
+                Libérez la Puissance de l'IA.
+            </h1>
+            <h2 class="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+                Accédez à <span class="font-bold text-blue-600">Gemini Pro</span> et obtenez <span class="font-bold text-indigo-600">2 To de stockage Cloud</span>, le tout intégré à votre compte Google.
+            </h2>
+        </header>
+
+        <!-- Bénéfices -->
+         <section class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl">
+                <div class="text-4xl mb-4">🧠</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">IA de Pointe</h3>
+                <p class="text-gray-600">Utilisez Gemini Pro dans NotebookLM pour analyser, rédiger et créer sans limites.</p>
+            </div>
+            <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl">
+                <div class="text-4xl mb-4">☁️</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">2 To de Stockage</h3>
+                <p class="text-gray-600">Archivez tous vos fichiers, photos et projets en toute sécurité. Ne manquez plus jamais d'espace.</p>
+            </div>
+            <div class="bg-white/60 backdrop-blur-sm p-6 rounded-2xl">
+                <div class="text-4xl mb-4">🔄</div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Intégration Parfaite</h3>
+                <p class="text-gray-600">Profitez d'une expérience fluide directement dans Gmail et vos applications Google préférées.</p>
+            </div>
+        </section>
+
+        <!-- Prix -->
+        <section class="mt-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                 <div class="promo-card bg-white border-2 border-green-500 rounded-2xl p-8 flex flex-col shadow-lg">
+                    <h3 class="text-lg font-bold text-green-600">POUR LES DÉTENTEURS DE CARTE VISA</h3>
+                    <p class="text-5xl md:text-6xl font-black text-gray-800 my-4">30.000 Ar</p>
+                    <p class="text-gray-600 mb-2">Activation instantanée sur votre compte Google.</p>
+                    <p class="text-sm font-bold text-gray-500 mb-6">Offre valable 15 mois</p>
+                    <a href="#contact" class="mt-auto w-full text-center bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors">
+                        Choisir cette offre
+                    </a>
                 </div>
-                 <div class="mb-6">
-                    <label class="block text-center text-sm font-medium text-gray-400 mb-2">Je suis...</label>
-                    <div class="flex justify-center gap-4" id="gender-select">
-                        <label class="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-all">
-                            <input type="radio" name="gender" value="homme" required>
-                            <span>Homme</span>
-                        </label>
-                        <label class="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg cursor-pointer transition-all">
-                            <input type="radio" name="gender" value="femme">
-                            <span>Femme</span>
-                        </label>
-                    </div>
+                 <div class="promo-card bg-white border-2 border-blue-500 rounded-2xl p-8 flex flex-col shadow-lg">
+                    <h3 class="text-lg font-bold text-blue-600">SANS CARTE VISA ? PAS DE PROBLÈME.</h3>
+                    <p class="text-5xl md:text-6xl font-black text-gray-800 my-4">70.000 Ar</p>
+                    <p class="text-gray-600 mb-2">Nous incluons la création d'une carte de paiement et l'activation du service.</p>
+                    <p class="text-sm font-bold text-gray-500 mb-6">Offre valable 15 mois</p>
+                    <a href="#contact" class="mt-auto w-full text-center bg-blue-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-600 transition-colors">
+                        Choisir le pack complet
+                    </a>
                 </div>
-                <p id="name-error" class="text-red-500 text-sm mb-4 hidden"></p>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Commencer à discuter</button>
-            </form>
+            </div>
+        </section>
+
+        <!-- Avertissement -->
+        <section class="mt-10 max-w-4xl mx-auto">
+             <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-6 rounded-r-lg">
+                <h3 class="text-xl font-bold flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    Attention : Offre de Lancement !
+                </h3>
+                <p class="mt-2">Ces tarifs promotionnels sont valables uniquement jusqu'à fin **juillet 2025**. Après cette date, les prix augmenteront comme en magasin :</p>
+                <ul class="list-disc list-inside mt-2 space-y-1">
+                    <li>L'offre à 30.000 Ar passera à <strong>50.000 Ar</strong>.</li>
+                    <li>Le pack complet à 70.000 Ar passera à <strong>100.000 Ar</strong>.</li>
+                </ul>
+                <p class="mt-3 font-semibold">Profitez des meilleurs prix dès maintenant !</p>
+            </div>
+        </section>
+
+        <!-- Contact -->
+        <section id="contact" class="mt-16 text-center bg-gray-800 text-white p-8 md:p-12 rounded-2xl">
+            <h3 class="text-3xl font-bold">Prêt à transformer votre productivité ?</h3>
+            <p class="mt-4 text-lg text-gray-300 max-w-2xl mx-auto">Contactez JL Simon dès maintenant pour activer votre offre. Votre compte Google est la seule clé dont vous avez besoin.</p>
+            <div class="mt-8 flex flex-col md:flex-row justify-center items-center gap-4">
+                 <a href="https://wa.me/261326439245" target="_blank" class="bg-green-500 font-bold py-3 px-8 rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 4.315 1.731 6.086l.001.004 1.516 2.443-1.256 4.563 4.659-1.222z"/></svg>
+                    Contacter sur WhatsApp
+                </a>
+                <a href="https://www.facebook.com/jl.simon.2025" target="_blank" class="bg-gray-700 font-bold py-3 px-8 rounded-lg hover:bg-gray-600 transition-colors">
+                    Message sur Facebook
+                </a>
+            </div>
+        </section>
+
+        <!-- Pied de page -->
+        <footer class="text-center py-8 mt-8">
+            <p class="text-sm text-gray-500">&copy; 2025 JL Simon | Offre soumise à conditions.<br>
+            Google, Gemini, Google Cloud, et Gmail sont des marques déposées de Google LLC.
+            </p>
+        </footer>
+    </div>
+    
+    <!-- ÉLÉMENTS DE L'AGENT IA -->
+    <div id="chat-bubble">
+        <svg id="chat-bubble-icon" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.839 8.839 0 01-4.083-.982L2 18l1.982-3.917A8.949 8.949 0 012 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM4.415 14.183A6.975 6.975 0 0010 15a7 7 0 100-14 6.974 6.974 0 00-5.585 2.817L3.18 5.414 2.82 11.2l1.595 3.017z" clip-rule="evenodd" /></svg>
+    </div>
+
+    <div id="chat-window">
+        <!-- En-tête du chat -->
+        <div class="p-4 bg-gray-50 border-b flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <h3 class="font-bold text-gray-800">Assistant IA ✨</h3>
+            </div>
+            <button id="close-chat" class="text-gray-500 hover:text-gray-800">&times;</button>
+        </div>
+        <!-- Corps du chat -->
+        <div id="chat-body" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-2"></div>
+        <!-- Zone de saisie du chat -->
+        <div id="chat-input-area" class="p-2 border-t bg-gray-50">
+             <div id="chat-options" class="p-2 grid grid-cols-1 gap-2"></div>
+            <div class="flex items-center p-2">
+                <input type="text" id="chat-input" placeholder="Posez votre question..." class="w-full px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="send-button" class="ml-2 p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" /></svg>
+                </button>
+            </div>
         </div>
     </div>
-    
-    <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-60 z-30"></div>
 
-    <div id="app-container" class="w-screen h-screen flex relative overflow-hidden">
-        <aside id="sidebar" class="sidebar absolute md:relative inset-y-0 left-0 w-full md:w-1/3 lg:w-1/4 h-full flex flex-col border-r border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-40">
-            <header class="p-4 border-b border-gray-800 flex justify-between items-center">
-                <h1 class="text-xl font-bold text-white">Discussions</h1>
-                <button id="sidebar-new-chat-btn" class="p-2 rounded-full hover:bg-gray-700">
-                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                </button>
-            </header>
-            <div id="conversation-list" class="flex-1 overflow-y-auto">
-            </div>
-        </aside>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatBubble = document.getElementById('chat-bubble');
+        const chatWindow = document.getElementById('chat-window');
+        const chatBody = document.getElementById('chat-body');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const chatOptions = document.getElementById('chat-options');
+        const closeChatButton = document.getElementById('close-chat');
 
-        <main class="flex-1 flex flex-col h-full w-full">
-            <div id="welcome-screen" class="flex-1 flex-col items-center justify-center h-full text-center p-8 hidden">
-                  <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-24 h-24 rounded-full mb-4 object-cover" onerror="this.src='https://placehold.co/100x100/1e1f20/FFFFFF?text=C'">
-                  <h2 class="text-2xl font-bold">Chrice</h2>
-                  <p class="text-gray-400 mb-6">Sélectionnez une discussion ou commencez-en une nouvelle.</p>
-                  <button id="welcome-new-chat-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg">Nouvelle Discussion</button>
-            </div>
-            
-            <div id="chat-area" class="hidden flex-1 flex-col">
-                <header class="p-4 flex items-center flex-shrink-0 border-b border-gray-800">
-                    <button id="menu-toggle-btn" class="md:hidden p-2 rounded-full mr-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    <img src="/image/photodeprofil.jpg" alt="Chrice Avatar" class="w-10 h-10 rounded-full mr-4 object-cover" onerror="this.src='https://placehold.co/40x40/1e1f20/FFFFFF?text=C'">
-                    <div>
-                        <h1 id="header-title" class="text-xl font-bold text-white"></h1>
-                        <p id="header-subtitle" class="text-sm text-gray-400">En ligne</p>
-                    </div>
-                </header>
-
-                <div id="chat-window" class="flex-1 p-4 overflow-y-auto"></div>
-
-                <footer class="p-4 flex-shrink-0">
-                    <form id="ai-form" class="flex items-center gap-3">
-                        <input id="ai-input" type="text" placeholder="Écris ton message..." class="chat-input w-full rounded-full py-3 px-5 text-sm">
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex-shrink-0 flex items-center justify-center">
-                            <svg class="w-6 h-6 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        </button>
-                    </form>
-                    <p class="text-xs text-center mt-2 text-gray-500">Les messages ne sont pas sauvegardés et disparaissent après la session.</p>
-                </footer>
-            </div>
-        </main>
-    </div>
-
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyD1Kzvy-wh6BoIOMTgX8FbbCmqOTdC47Bs",
-          authDomain: "chriceai.firebaseapp.com",
-          projectId: "chriceai",
-          storageBucket: "chriceai.appspot.com",
-          messagingSenderId: "687417014846",
-          appId: "1:687417014846:web:1ebb57b4001cd5ce94ef6f",
-          measurementId: "G-FSKD0Y4BPZ"
+        const initialQuestions = {
+            'offre_30k': "Expliquez-moi l'offre à 30.000 Ar.",
+            'offre_70k': "Détails sur l'offre à 70.000 Ar ?",
+            'difference': "Quelle est la différence principale ?"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        
-        // DOM Elements
-        const nameModal = document.getElementById('name-modal');
-        const nameForm = document.getElementById('name-form');
-        const nameInput = document.getElementById('name-input');
-        const nameError = document.getElementById('name-error');
-        const conversationList = document.getElementById('conversation-list');
-        const headerTitle = document.getElementById('header-title');
-        const chatWindow = document.getElementById('chat-window');
-        const aiForm = document.getElementById('ai-form');
-        const aiInput = document.getElementById('ai-input');
-        const sidebarNewChatBtn = document.getElementById('sidebar-new-chat-btn');
-        const welcomeNewChatBtn = document.getElementById('welcome-new-chat-btn');
-        const sidebar = document.getElementById('sidebar');
-        const menuToggleBtn = document.getElementById('menu-toggle-btn');
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const chatArea = document.getElementById('chat-area');
-        const sidebarOverlay = document.getElementById('sidebar-overlay');
-        
-        // State
-        let conversations = {};
-        let activeConversationId = null;
-        let isWaitingForResponse = false;
-
-        // --- Initialization ---
-        function init() {
-            loadConversationsFromLocalStorage();
-            renderConversationList();
-            if (Object.keys(conversations).length > 0) {
-                selectConversation(Object.keys(conversations).sort((a,b) => b-a)[0]);
-            } else {
-                showWelcomeScreen();
+        // ... le reste du code JavaScript reste identique ...
+        chatBubble.addEventListener('click', () => {
+            chatWindow.classList.toggle('open');
+            if(chatWindow.classList.contains('open') && chatBody.children.length === 0) {
+                startChat();
             }
-            setupEventListeners();
-        }
-
-        function setupEventListeners() {
-            nameForm.addEventListener('submit', handleNameSubmit);
-            sidebarNewChatBtn.addEventListener('click', () => {
-                nameError.classList.add('hidden');
-                nameModal.classList.remove('hidden');
-            });
-            welcomeNewChatBtn.addEventListener('click', () => {
-                nameError.classList.add('hidden');
-                nameModal.classList.remove('hidden');
-            });
-            aiForm.addEventListener('submit', handleFormSubmit);
-            menuToggleBtn.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-        }
+        });
+        closeChatButton.addEventListener('click', () => chatWindow.classList.remove('open'));
+        sendButton.addEventListener('click', handleSendMessage);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSendMessage();
+        });
         
-        function toggleSidebar() {
-            sidebar.classList.toggle('-translate-x-full');
-            sidebarOverlay.classList.toggle('hidden');
+        function startChat() {
+            addAgentMessage("Bonjour ! Je suis l'assistant IA de JL Simon. Posez-moi une question sur l'offre Gemini ou cliquez sur une suggestion.", true);
         }
 
-        // --- User & Conversation Setup ---
-        function handleNameSubmit(e) {
-            e.preventDefault();
-            let userName = nameInput.value.trim();
-            let gender = document.querySelector('input[name="gender"]:checked')?.value;
-            
-            if (userName.toLowerCase() === 'alicia') {
-                gender = 'femme';
-            }
-
-            if (!userName) {
-                nameError.textContent = "Veuillez entrer votre prénom pour continuer.";
-                nameError.classList.remove('hidden');
-                return;
-            }
-            
-            if (!gender) {
-                nameError.textContent = "Veuillez choisir un genre.";
-                nameError.classList.remove('hidden');
-                return;
-            }
-            
-            nameError.classList.add('hidden');
-            createNewConversation(userName, gender);
-            nameModal.classList.add('hidden');
-            nameInput.value = '';
-            const checkedRadio = document.querySelector('input[name="gender"]:checked');
-            if(checkedRadio) checkedRadio.checked = false;
-            aiInput.focus();
-        }
-        
-        function createNewConversation(userName, gender) {
-            const newId = 'conv-' + Date.now();
-            const starter = "Salut ! Qu'est-ce qui t'amène ?";
-            conversations[newId] = {
-                id: newId,
-                userInfo: { name: userName, gender: gender, mood: 'normal', angryCount: 0 },
-                history: [{ role: 'assistant', content: starter, timestamp: Date.now() }]
-            };
-            saveConversationsToLocalStorage();
-            syncConversationToFirebase(newId);
-            selectConversation(newId);
-        }
-
-        // --- Local & Firebase Storage ---
-        function loadConversationsFromLocalStorage() {
-            const saved = localStorage.getItem('chrice_conversations');
-            conversations = saved ? JSON.parse(saved) : {};
-        }
-
-        function saveConversationsToLocalStorage() {
-            localStorage.setItem('chrice_conversations', JSON.stringify(conversations));
-        }
-        
-        async function syncConversationToFirebase(convId) {
-            if (!conversations[convId]) return;
-            const convData = conversations[convId];
-            const docRef = doc(db, 'conversations', convData.id);
+        async function handleSendMessage() {
+            const userInput = chatInput.value.trim();
+            if (userInput === '') return;
+            addUserMessage(userInput);
+            chatInput.value = '';
+            setChatInputDisabled(true);
+            chatOptions.innerHTML = '';
+            const typing = showTypingIndicator();
             try {
-                await setDoc(docRef, convData, { merge: true });
+                const aiResponse = await askSecureAgent(userInput);
+                chatBody.removeChild(typing);
+                addAgentMessage(aiResponse, true);
             } catch (error) {
-                console.error("Firebase sync failed:", error);
-            }
-        }
-        
-        // --- UI Rendering ---
-        function renderConversationList() {
-            const sortedIds = Object.keys(conversations).sort((a,b) => {
-                const lastMsgA = conversations[a].history[conversations[a].history.length - 1]?.timestamp || 0;
-                const lastMsgB = conversations[b].history[conversations[b].history.length - 1]?.timestamp || 0;
-                return lastMsgB - lastMsgA;
-            });
-
-            conversationList.innerHTML = '';
-            sortedIds.forEach(id => {
-                const conv = conversations[id];
-                const lastMessage = conv.history[conv.history.length-1]?.content || 'Nouvelle discussion';
-                const item = document.createElement('div');
-                item.className = `conversation-item p-4 cursor-pointer border-b border-gray-800 ${id === activeConversationId ? 'active' : ''}`;
-                item.dataset.id = id;
-                item.innerHTML = `<h3 class="font-semibold truncate">${conv.userInfo.name}</h3><p class="text-xs text-gray-400 truncate">${lastMessage.includes('<img') ? '[Photo]' : lastMessage}</p>`;
-                item.addEventListener('click', () => selectConversation(id));
-                conversationList.appendChild(item);
-            });
-        }
-        
-        function selectConversation(id) {
-            activeConversationId = id;
-            renderChatWindow();
-            renderConversationList();
-            if (window.innerWidth < 768) {
-                toggleSidebar();
-            }
-        }
-
-        function renderChatWindow() {
-             if (!activeConversationId || !conversations[activeConversationId]) {
-                showWelcomeScreen();
-                return;
-             }
-             
-             welcomeScreen.classList.add('hidden');
-             chatArea.classList.remove('hidden');
-             chatArea.classList.add('flex');
-
-             const conv = conversations[activeConversationId];
-             headerTitle.textContent = `Discussion avec ${conv.userInfo.name}`;
-             chatWindow.innerHTML = '';
-             conv.history.forEach(msg => appendMessage(msg.content, msg.role, false));
-        }
-        
-        function showWelcomeScreen() {
-            welcomeScreen.classList.remove('hidden');
-            welcomeScreen.classList.add('flex');
-            chatArea.classList.add('hidden');
-            chatArea.classList.remove('flex');
-            activeConversationId = null;
-        }
-
-        // --- Form & AI Interaction ---
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            if (isWaitingForResponse || !activeConversationId) return;
-            
-            const userPrompt = aiInput.value.trim();
-            if (!userPrompt) return;
-            
-            const conv = conversations[activeConversationId];
-            const isApology = ['pardon', 'désolé', 'excuse', 'je m\'excuse', 'stp', 's\'il te plaît'].some(word => userPrompt.toLowerCase().includes(word));
-            
-            if (conv.userInfo.mood === 'angry' && !isApology) {
-                conv.userInfo.angryCount = (conv.userInfo.angryCount || 0) + 1;
-                addMessage(userPrompt, 'user');
-                aiInput.value = '';
-                if (conv.userInfo.angryCount < 3) {
-                    return; // AI stays silent
-                }
-            }
-            
-            if (isApology || (conv.userInfo.mood === 'angry' && conv.userInfo.angryCount >= 3)) {
-                conv.userInfo.mood = 'normal';
-                conv.userInfo.angryCount = 0;
-            }
-            
-            addMessage(userPrompt, 'user');
-            aiInput.value = '';
-            appendMessage('', 'loader');
-            isWaitingForResponse = true;
-
-            try {
-                const response = await getAiResponse(userPrompt, conv.history, conv.userInfo.name, conv.userInfo.gender);
-                removeLoader();
-                if(response.includes("[SET_MOOD_ANGRY]")) {
-                    conv.userInfo.mood = 'angry';
-                    conv.userInfo.angryCount = 0;
-                    addMessage(response.replace("[SET_MOOD_ANGRY]", "").trim(), 'assistant');
-                } else {
-                    addMessage(response, 'assistant');
-                }
-            } catch (error) {
-                removeLoader();
-                addMessage("Désolé, il y a eu un souci de connexion.", 'assistant');
-                console.error("API Error:", error);
+                console.error("Error calling secure agent:", error);
+                chatBody.removeChild(typing);
+                addAgentMessage("Désolé, une erreur est survenue avec notre assistant. Veuillez réessayer ou contacter directement JL Simon.", true);
             } finally {
-                isWaitingForResponse = false;
+                setChatInputDisabled(false);
             }
         }
-        
-        // --- Message Handling & Display ---
-        function addMessage(content, role) {
-            if (!activeConversationId) return;
-            const conv = conversations[activeConversationId];
-            conv.history.push({ role, content, timestamp: Date.now() });
-            conv.lastUpdated = Date.now();
-            if (activeConversationId) {
-                appendMessage(content, role);
+
+        async function handleOptionClick(key) {
+            const userQuestion = initialQuestions[key];
+            addUserMessage(userQuestion);
+            setChatInputDisabled(true);
+            chatOptions.innerHTML = '';
+            const typing = showTypingIndicator();
+            try {
+                const aiResponse = await askSecureAgent(userQuestion);
+                chatBody.removeChild(typing);
+                addAgentMessage(aiResponse, true);
+            } catch (error) {
+                console.error("Error calling secure agent:", error);
+                chatBody.removeChild(typing);
+                addAgentMessage("Désolé, une erreur est survenue avec notre assistant. Veuillez réessayer ou contacter directement JL Simon.", true);
+            } finally {
+                setChatInputDisabled(false);
             }
-            saveConversationsToLocalStorage();
-            syncConversationToFirebase(activeConversationId);
-            renderConversationList();
-        }
-        
-        function appendMessage(text, type, isNew = true) {
-            const messageWrapper = document.createElement('div');
-            messageWrapper.className = `flex mb-4 w-full ${type === 'user' ? 'justify-end' : 'justify-start'}`;
-            const messageBubble = document.createElement('div');
-            messageBubble.className = `p-3 rounded-2xl max-w-[80%] ${type === 'user' ? 'user-message rounded-br-none' : 'ai-message rounded-bl-none'}`;
-            if (type === 'loader') {
-                messageWrapper.id = 'loader-message';
-                messageBubble.innerHTML = `<div class="flex items-center space-x-2"><div class="loader-dot"></div><div class="loader-dot"></div><div class="loader-dot"></div></div>`;
-            } else {
-                messageBubble.innerHTML = `<p class="text-sm leading-relaxed">${text}</p>`;
-            }
-            messageWrapper.appendChild(messageBubble);
-            chatWindow.appendChild(messageWrapper);
-            if (isNew) scrollToBottom();
-        }
-        
-        function scrollToBottom() {
-            setTimeout(() => {
-                chatWindow.scrollTo({ top: chatWindow.scrollHeight, behavior: 'smooth' });
-            }, 100);
-        }
-        
-        function removeLoader() {
-            const loader = document.getElementById('loader-message');
-            if (loader) loader.remove();
         }
 
-        // --- Gemini API Call via Netlify Function ---
-        async function getAiResponse(prompt, history, currentUser, gender) {
-            const netlifyFunctionUrl = '/.netlify/functions/gemini-proxy';
-
-            const payload = {
-                prompt,
-                history,
-                currentUser,
-                gender
-            };
-
-            const response = await fetch(netlifyFunctionUrl, {
+        async function askSecureAgent(prompt) {
+            // **MODIFICATION CLÉ :** On appelle notre propre fonction sécurisée
+            const response = await fetch('/.netlify/functions/ask-gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ prompt: prompt })
             });
 
             if (!response.ok) {
-                 const errorText = await response.text();
-                 throw new Error(`Netlify function error: ${response.status} ${errorText}`);
+                throw new Error(`Server function failed with status ${response.status}`);
             }
-            
+
             const result = await response.json();
-            return result.text;
+            return result.reply;
         }
-        
-        init();
+
+        // --- Fonctions d'aide pour l'interface utilisateur ---
+        function addAgentMessage(message, showOptions = false) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'w-full flex justify-start';
+            messageWrapper.innerHTML = `<div class="chat-message agent-message">${message}</div>`;
+            chatBody.appendChild(messageWrapper);
+            if (showOptions) {
+                setTimeout(displayInitialOptions, 300);
+            }
+            scrollToBottom();
+        }
+
+        function addUserMessage(message) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'w-full flex justify-end';
+            messageWrapper.innerHTML = `<div class="chat-message user-message">${message}</div>`;
+            chatBody.appendChild(messageWrapper);
+scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'chat-message agent-message typing-indicator';
+            typingDiv.innerHTML = '<span></span><span></span><span></span>';
+            chatBody.appendChild(typingDiv);
+            scrollToBottom();
+            return typingDiv;
+        }
+
+        function displayInitialOptions() {
+            chatOptions.innerHTML = '';
+            Object.keys(initialQuestions).forEach(key => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-sm';
+                button.textContent = initialQuestions[key];
+                button.onclick = () => handleOptionClick(key);
+                chatOptions.appendChild(button);
+            });
+            setChatInputDisabled(false);
+        }
+
+        function setChatInputDisabled(disabled) {
+            chatInput.disabled = disabled;
+            sendButton.disabled = disabled;
+            chatInput.placeholder = disabled ? "L'assistant écrit..." : "Posez votre question...";
+        }
+
+        function scrollToBottom() {
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+    });
     </script>
 </body>
 </html>
+
